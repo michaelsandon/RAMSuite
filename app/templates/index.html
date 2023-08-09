@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}RAMSuite - Home{% endblock %}
+{% block body %}
+<div id="home-background" class="py-3">
+  <div class = "d-flex flex-row h-100">
+    <div class = "coverc1">
+      <h1 class="coverlarge text-white">RAM-Suite</h1>
+    </div>
+    <div class="flex-grow-1 d-flex flex-column">
+      <div>
+        <h1 class="text-white">eliability</h1>
+      </div>
+      <div >
+        <h1 class="text-white">vailability</h1>
+      </div>
+      <div>
+        <h1 class="text-white">aintainability</h1>
+      </div>
+      <div id="tile-container" class="flex-grow-1">
+        <div  class="d-flex flex-row flex-wrap">
+          {% for tile in site_map %}
+          {% if tile['Name']!="Home" %}
+            <div class="card text-bg-light m-3" style="width: 18rem;" onclick="window.open('{{url_for(tile['Route'])}}', '_self');">
+              <div class="card-body">
+                <h5 class="card-title">{{tile['Name']}}</h5>
+                <h6 class="card-subtitle mb-2 text-body-secondary">Card subtitle</h6>
+                <p class="card-text">{{tile['Desc']}}</p>
+              </div>
+            </div>
+          {% endif %}
+          {% endfor %}
+        </div>        
+      </div>
+    </div>
+  </div> 
+</div>
+
+
+{% endblock %}

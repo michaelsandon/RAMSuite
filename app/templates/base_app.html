@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block body %}
+<div id="base-app-body" class="d-flex flex-column">
+  <div id="navbar">
+  {% include 'navbar.html' %}
+  </div>
+  <div id="content">
+  {% block content %}
+  {% endblock %}
+  </div>
+  
+  <div id="footer" class="background-dark-p">
+  {% block footer %}
+    {% include 'footer.html' %}
+  {% endblock %}
+  </div>
+</div>
+{% endblock %}

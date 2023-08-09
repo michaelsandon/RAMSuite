@@ -1,0 +1,41 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Weibull Fitter</h1> 
+</div>
+
+<div>
+  <h5>Overview:</h5>
+  <p>This template allows users to perform a basic fit of a survival function to an observed dataset. The open-source lifelines package has been used to achieve this.</p>
+</div> 
+
+<div>
+  <h5>Data Form:</h5>
+  <h6>Observed Data</h6>
+  <span><button type="button" onclick="modify_rows_to_hot(5)">+5rows</button></span>
+  <span><button type="button" onclick="modify_rows_to_hot(-5)">-5rows</button></span>
+  <div id="example" class="my-2"></div>
+  <form id="weibull-form" method="POST" action="{{url_for('survival.weibullfit_result')}}">
+    <select name="fitmethod" id="fitmethod">      
+      {% for item in ['Everything','Beta_2P','Exponential_1P','Exponential_2P','Gamma_2P','Gamma_3P','Gumbel_2P','Loglogistic_2P','Loglogistic_3P','Lognormal_2P','Lognormal_3P','Normal_2P','Weibull_2P','Weibull_3P','Weibull_CR','Weibull_DS','Weibull_DSZI','Weibull_Mixture','Weibull_ZI'] %}
+      <option value="{{item}}">{{item}}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="">submit</button>
+  </form>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{super()}}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<script src="{{url_for('survival.static', filename='js/survival.js')}}"></script>
+{% endblock %}
