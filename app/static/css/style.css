@@ -39,7 +39,10 @@
   vertical-align: middle;
 }
 
-.m-50 {
-  height: 20px;
-  margin: auto
+form {
+  width: 60%;
+  max-width: 600px;
+  min-width: 400px;
+  padding: 20px;
+  
 }

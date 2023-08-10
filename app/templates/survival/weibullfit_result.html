@@ -9,7 +9,20 @@
 <div>
   <p>rendered from {{method}}</p>
 </div>
-{{data|safe}}
+<h5>Parametric Model: Fitted Parameters</h5>
+<div class="table-responsive">
+  {{data|safe}}
+</div>
+<h5>Parametric Model: Fitted Parameters</h5>
+
+
+
+{% if result != None %}
+{% for key, value in plots.items() %}
+<h5>{{value["title"]}}</h5>
+<img src="data:image/png;base64,{{ value.img }}" width="500">
+{% endfor %}
+{% endif %}
 
 {% endblock %}
 

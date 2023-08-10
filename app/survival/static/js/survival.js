@@ -1,6 +1,6 @@
-const container = document.querySelector('#example');
+const survivaldata = document.querySelector('#survivaldata');
 
-const hot = new Handsontable(container, {
+const hot = new Handsontable(survivaldata, {
   data: [
     [10, false,1],
     [8, true,null],
