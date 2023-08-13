@@ -1,13 +1,24 @@
+/*-------------------Generic Styling----------*/
+
 * {
   font-family: monospace, "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+form {
+  width: 60%;
+  max-width: 600px;
+  min-width: 400px;
+  padding: 20px;
+}
+
+/*------------------- Home Page Styling ---------------------*/
 #home-background {
   background-image: linear-gradient(
     rgba(0, 51, 102,0.8),rgba(0, 51, 102,0.8)),
     url("/static/img/reliability_background.jpg");
   height: 100vh;
 }
+
 
 #tile-container {
   overflow: auto;
@@ -18,6 +29,8 @@
   writing-mode: vertical-lr;
 }
 
+
+/*------------------- Base App Styling ---------------------*/
 #content {
   background: rgba(0, 51, 102,0.3);
   padding-left: 20px;
@@ -39,10 +52,9 @@
   vertical-align: middle;
 }
 
-form {
-  width: 60%;
-  max-width: 600px;
-  min-width: 400px;
-  padding: 20px;
-  
+
+/*------------------- Generic Styling available for Base App content ---------------------*/
+.content-container {
+  width: 80%;
 }
+

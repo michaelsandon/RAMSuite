@@ -11,25 +11,31 @@
 
 <div>
   <h5>Overview:</h5>
-  <p>This template allows users to perform a basic fit of a survival function to an observed dataset. The open-source lifelines package has been used to achieve this.</p>
+  <p>This template allows users to fit a sepcific or best survival function to an observed dataset. The open-source 'reliability' package has been used to achieve this.</p>
 </div> 
 
 <div>
-  <form class ="rounded border bg-light" id="weibull-form" method="POST" action="{{url_for('survival.weibullfit_result')}}">
+  <form class ="rounded border bg-light my-2" id="survival-form" method="POST" action="{{url_for('survival.survivalfit_result')}}">
     <h5>Data Form:</h5>
-    <h6>Observed Data</h6>
+    <div><strong>Observed Data:</strong></div>
     <span><button type="button" onclick="modify_rows_to_hot(5)">+5rows</button></span>
     <span><button type="button" onclick="modify_rows_to_hot(-5)">-5rows</button></span>
+    <div><small class="form-text text-muted">
+      Notes: <br>
+      - Data is assumed non-censored unless ticked  <br>
+      - Qty left blank will be assumed as a single data point  <br>
+      - Censoring is right only (not left or interval)  <br>
+    </small></div>
     <div id="survivaldata" class="my-2"></div>   
-    <div class="form-group">
-      <label for="fitmethod">Fit Method</label>
+    <div class="form-group mt-2">
+      <label for="fitmethod"><strong>Fit Method:</strong></label>
       <select class="form-control" name="fitmethod" id="fitmethod">      
         {% for item in ['Everything','Beta_2P','Exponential_1P','Exponential_2P','Gamma_2P','Gamma_3P','Gumbel_2P','Loglogistic_2P','Loglogistic_3P','Lognormal_2P','Lognormal_3P','Normal_2P','Weibull_2P','Weibull_3P','Weibull_CR','Weibull_DS','Weibull_DSZI','Weibull_Mixture','Weibull_ZI'] %}
         <option value="{{item}}">{{item}}</option>
         {% endfor %}
       </select>      
     </div>
-    <div><strong>Plot Options:</strong></div>
+    <div class="mt-2"><strong>Plot Options:</strong></div>
     <div class="form-check form-check-inline">
       <input class="form-check-input" type="checkbox" name="probability_plot" id="probability_plot" value="True" checked>
       <label class="form-check-label" for="probability_plot">Probability Plot</label>
@@ -38,8 +44,12 @@
       <input class="form-check-input" type="checkbox" name="sf_plot" id="sf_plot" value="True" checked>
       <label class="form-check-label" for="sf_plot">CDF Plot</label>
     </div>
-    <div>
-      <button type="submit" class="">submit</button>  
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" name="km_plot" id="km_plot" value="True" checked>
+      <label class="form-check-label" for="km_plot">Kaplan-Meier Plot</label>
+    </div>
+    <div class="d-flex justify-content-center m-2">
+      <button type="submit" class="m-auto">submit</button>  
     </div>
   </form>
 </div>
@@ -50,5 +60,5 @@
 {% block scripts %}
 {{super()}}
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
-<script src="{{url_for('survival.static', filename='js/survival.js')}}"></script>
+<script src="{{url_for('survival.static', filename='js/survivalfit.js')}}"></script>
 {% endblock %}

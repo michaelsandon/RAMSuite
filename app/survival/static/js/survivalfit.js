@@ -38,19 +38,19 @@ function modify_rows_to_hot(rows=5){
   }
 }
 
-$("#weibull-form").submit( function(eventObj) {
+$("#survival-form").submit( function(eventObj) {
     $("<input />").attr("type", "hidden")
         .attr("name", "survivaltimes")
         .attr("value", JSON.stringify(hot.getDataAtCol(0)))
-        .appendTo("#weibull-form");
+        .appendTo("#survival-form");
     $("<input />").attr("type", "hidden")
       .attr("name", "survivalcensor")
       .attr("value", JSON.stringify(hot.getDataAtCol(1)))
-      .appendTo("#weibull-form");
+      .appendTo("#survival-form");
     $("<input />").attr("type", "hidden")
       .attr("name", "survivalqty")
       .attr("value", JSON.stringify(hot.getDataAtCol(2)))
-      .appendTo("#weibull-form");
+      .appendTo("#survival-form");
     return true;
 });
 /*

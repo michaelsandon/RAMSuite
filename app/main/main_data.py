@@ -11,11 +11,11 @@ site_map = [{
   'lifetime anaylsis modules to determine failure patterns',
   'Children': [{
     'Name': "Sampling",
-    'Route': "survival.sample",
+    'Route': "survival.distsample",
     'Desc': "main.index"
   }, {
-    'Name': "Weibull Fit",
-    'Route': "survival.weibullfit",
+    'Name': "Survival Fit",
+    'Route': "survival.survivalfit",
     'Desc': "main.index"
   }]
 }, {

@@ -1,0 +1,63 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Distribution Sampler</h1> 
+</div>
+
+<div>
+  <h5>Overview:</h5>
+  <p>This template allows users to sample lifetimes from a selected distribution. The open-source 'reliability' package has been used to achieve this.</p>
+</div> 
+
+<div>
+  <form class ="rounded border bg-light my-2" id="survival-form" method="POST" action="{{url_for('survival.survivalfit_result')}}">
+    <h5>Data Form:</h5>
+    <div><small class="form-text text-muted">
+      Notes: <br>
+      - Note1  <br>
+      - Note2  <br>
+      - Note3)  <br>
+    </small></div>
+    <div class="form-group mt-2">
+      <label for="dist"><strong>Fit Method:</strong></label>
+      <select class="form-control" name="dist" id="dist">      
+        {% for item in ['Beta_Distribution','Exponential_Distribution','Gamma_Distribution','Gumbel_Distribution','Loglogistic_Distribution','Lognormal_Distribution','Normal_Distribution','Weibull_Distribution'] %}
+        <option value="{{item}}">{{item}}</option>
+        {% endfor %}
+      </select>      
+    </div>
+    <div class="form-group">
+      <label for="n_samples">Number of Samples:</label>
+      <input type="number" class="form-control" id="n_samples" name="n_samples" placeholder="10">
+    </div>
+    <div class="mt-2"><strong>Distribution Parameters:</strong></div>
+    <div class="form-group">
+      <label for="param1">Parameter 1:</label>
+      <input type="number" class="form-control" id="param1" name="param1" placeholder="10">
+    </div>
+    <div class="form-group">
+      <label for="param2">Parameter 2:</label>
+      <input type="number" class="form-control" id="param2" name="param2" placeholder="10">
+    </div>
+    <div class="form-group">
+      <label for="param3">Parameter 3:</label>
+      <input type="number" class="form-control" id="param3" name="param3" placeholder="10">
+    </div>
+    <div class="d-flex justify-content-center m-2">
+      <button type="submit" class="m-auto">submit</button>  
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{super()}}
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<script src="{{url_for('survival.static', filename='js/distsample.js')}}"></script>
+{% endblock %}

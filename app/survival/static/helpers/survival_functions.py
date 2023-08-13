@@ -8,6 +8,7 @@ import pandas as pd
 from json import loads
 from io import BytesIO
 import base64
+from bs4 import BeautifulSoup
 
 
 def helper_formdata_to_df(form_data: dict):
@@ -17,16 +18,32 @@ def helper_formdata_to_df(form_data: dict):
   return pd.DataFrame(data=result)
 
 
-def series_to_html(pd_series):
+def helper_series_to_html(pd_series):
   frame = pd.Series.to_frame(pd_series)
   return frame.to_html()
 
+def helper_add_class_to_tags(base_html, mods = [{'tag':"",'class':""}]):
+  #read in html
+  soup = BeautifulSoup(base_html, 'html.parser')
+
+  for mod in mods:
+    if(mod['tag'] != ""):
+      target_tags = soup.find_all(mod['tag'])
+      for tag in target_tags:
+        try:
+          tag['class'].append(mod["class"])
+        except:
+          tag['class'] = mod["class"]
+
+  #convert tree back to string
+  return(str(soup))
+        
 
 def survival_analysis(life_data,
                       grouped=False,
                       output="html",
                       method="Weibull_2P",
-                      plot_options={'probability_plot':True, 'sf_plot':True, 'mle_plot':True}):
+                      plot_options={'probability_plot':True, 'sf_plot':True, 'km_plot':True}):
 
   #clean up df if needed
   life_data = life_data.fillna(value={'qty': 1, 'censor': False})
@@ -56,30 +73,39 @@ def survival_analysis(life_data,
   for key, plotitem in plot_options.items():
     figfile = BytesIO()
     if plotitem:
-      plotted = False     
-      match key:
-        case 'probability_plot':
-          fit_func(
-            failures=(life_data['time'][life_data['censor'] != True]).to_list(),
-            right_censored=(life_data['time'][life_data['censor'] == True]).to_list(),
-            show_probability_plot=True,
-            print_results=False,
-            downsample_scatterplot=False)
-          plotted = True
-        case 'sf_plot':
-          fit.distribution.SF(label='Fitted Distribution', color='steelblue')
-          relplot.plot_points(
-            failures=(life_data['time'][life_data['censor'] != True]).to_list(),
-            func='SF',
-            label='failure data',
-            color='red',
-            alpha=0.7)
-          plotted = True
-        case 'mle_plot':
-          plotted = False
-        # If an exact match is not confirmed, this last case will be used if provided
-        case _:
-          plotted = False
+      plotted = False 
+
+      try:
+        match key:
+          case 'probability_plot':
+            fit_func(
+              failures=(life_data['time'][life_data['censor'] != True]).to_list(),
+              right_censored=(life_data['time'][life_data['censor'] == True]).to_list(),
+              show_probability_plot=True,
+              print_results=False,
+              downsample_scatterplot=False)
+            plotted = True
+          case 'sf_plot':
+            fit.distribution.SF(label='Fitted Distribution', color='steelblue')
+            relplot.plot_points(
+              failures=(life_data['time'][life_data['censor'] != True]).to_list(),
+              func='SF',
+              label='failure data',
+              color='red',
+              alpha=0.7)
+            plotted = True
+          case 'km_plot':
+            relnp.KaplanMeier(
+              failures=(life_data['time'][life_data['censor'] != True]).to_list(),       
+              right_censored=(life_data['time'][life_data['censor'] == True]).to_list(),     
+              show_plot=True,
+              print_results=False, plot_CI=True, CI=0.95, plot_type='SF')
+            plotted = True
+          # If an exact match is not confirmed, this last case will be used if provided
+          case _:
+            plotted = False
+      except:
+        plotted = False
           
       if plotted:
         plt.savefig(figfile, format='png')
@@ -94,7 +120,9 @@ def survival_analysis(life_data,
 
   #adjust outputs if necessary
   if (output == "html"):
-    result = result.to_html(
-      classes=["thead-dark", "table", "table-responsive"])
+    result = result.to_html(index=False, justify="left")
+    result = helper_add_class_to_tags(base_html = result,
+                                      mods = [{'tag':"table",'class':"table"},
+                                              {'tag':"thead",'class':"table-dark"}])
 
   return {"Datatables": result, "Plots": plots}
