@@ -19,10 +19,17 @@ site_map = [{
     'Desc': "main.index"
   }]
 }, {
-  'Name': 'Uptime',
+  'Name':
+  'Uptime',
   'Desc':
   'RAM simulation type model to determine stream uptime, throughput etc.',
-  'Route': "main.index"
+  'Route':
+  "availability.index",
+  'Children': [{
+    'Name': "Single Package Uptime",
+    'Route': "availability.packageuptime",
+    'Desc': "availability.packageuptime"
+  }]
 }, {
   'Name': 'Cost',
   'Desc': 'Lifecycle cost evaluation module',

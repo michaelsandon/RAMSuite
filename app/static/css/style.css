@@ -11,6 +11,9 @@ form {
   padding: 20px;
 }
 
+.card-body{
+  cursor:pointer;
+}
 /*------------------- Home Page Styling ---------------------*/
 #home-background {
   background-image: linear-gradient(
@@ -52,9 +55,47 @@ form {
   vertical-align: middle;
 }
 
+.dropdown-menu.show {
+  background-color: rgb(123, 166, 209)
+}
 
 /*------------------- Generic Styling available for Base App content ---------------------*/
 .content-container {
   width: 80%;
 }
 
+.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+            color: red;
+            opacity: 1; /* Firefox */
+}
+
+.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
+            color: red;
+}
+
+.form-control::-ms-input-placeholder { /* Microsoft Edge */
+            color: red;
+ }
+
+/*------------------- Download icon ---------------------*/
+
+.fa {  
+  padding: 10px;  
+  text-align: center;  
+  margin: 5px 2px;  
+  font-size: 20px;  
+  width: 40px;
+  border-radius: 50%;
+  background: rgba(2, 45, 74, 0.7);  
+  color: white;  
+}
+
+.fa-solid {
+  color: rgba(0, 51, 102);  
+}
+
+
+
+#sampletablewrapper {
+  overflow-y:auto;
+}

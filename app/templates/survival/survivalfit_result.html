@@ -1,21 +1,17 @@
 {% extends 'base_app.html' %}
 {% block head %}
   {{super()}}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
 {% endblock %}
 
 {% block content %}
 <div class="content-container">
-  <h1>Survival Results Page</h1>
-  <div>
-    <p>rendered from {{method}}</p>
-  </div>
+  <h1>Survival Results</h1>
   <h5>Parametric Model: Fitted Parameters</h5>
   <div class="table-responsive">
     {{data|safe}}
   </div>
   
-  {% if result != None %}
+  {% if result is defined and result|length %}
     {% for key, value in plots.items() %}
     <h5>{{value["title"]}}</h5>
     <img src="data:image/png;base64,{{ value.img }}" width="500">
@@ -27,6 +23,5 @@
 
 {% block scripts %}
   {{super()}}
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
   <script src="{{url_for('survival.static', filename='js/survival.js')}}"></script>
 {% endblock %}

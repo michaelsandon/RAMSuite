@@ -30,12 +30,19 @@ function updateform(){
 
   for(param of ["param1","param2","param3"]){
     if(distributions[dist][param]=="hidden"){
+      $("#"+param).val("")
       $("#"+param).attr( "type", "hidden")
       $("label[for='"+param+"']").css("display","none")
+      $("#"+param).removeAttr("required")
     } else {
       $("label[for='"+param+"']").text(distributions[dist][param])
       $("label[for='"+param+"']").css("display","inline-block")
       $("#"+param).attr("type","number")
+      if(distributions[dist][param].includes("optional")){
+        $("#"+param).removeAttr("required")
+      } else {
+        $("#"+param).attr("required","")
+      }
     }
   }  
 }

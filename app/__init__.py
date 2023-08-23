@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Blueprint
+from flask import Flask
 from config import Config
 from app.main.main_data import site_map
 
@@ -21,6 +21,8 @@ def create_app(config_class=Config):
   from app.survival import bp as survival_bp
   app.register_blueprint(survival_bp, url_prefix='/survival')
 
+  from app.availability import bp as availability_bp
+  app.register_blueprint(availability_bp, url_prefix='/availability')
   # main driver function
 
   return app

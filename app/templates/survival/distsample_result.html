@@ -1,0 +1,31 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+{% endblock %}
+
+{% block content %}
+<div class="content-container h-100">
+  <h1>Sampling Results</h1>
+  <div class="d-flex flex-row h-75">
+    <div class = "m-2 h-100">
+      <h5 class="d-inline">Samples</h5>
+      <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
+      <div id="sampletablewrapper" class="table-responsive h-100">
+        {{samples|safe}}
+      </div>
+    </div>
+    <div class="m-2">
+      {% if histogram is defined and histogram|length %}
+        <h5>Histogram</h5>
+        <img src="data:image/png;base64,{{ histogram }}" width="500">
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+  {{super()}}
+<script src="{{url_for('survival.static', filename='js/distsample_result.js')}}"></script>
+{% endblock %}
