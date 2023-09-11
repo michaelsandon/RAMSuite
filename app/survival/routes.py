@@ -16,7 +16,6 @@ def distsample():
 @bp.route('/distsample/result', methods=["GET", "POST"])
 def distsample_result():
   
-  print(request.form)
   params = {
     'param1':request.form['param1'],
     'param2':request.form['param2'],

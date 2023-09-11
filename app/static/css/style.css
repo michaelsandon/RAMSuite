@@ -77,6 +77,15 @@ form {
             color: red;
  }
 
+fieldset {
+  border: 2px groove;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+legend {
+  font-size: 14px;p
+}
 /*------------------- Download icon ---------------------*/
 
 .fa {  

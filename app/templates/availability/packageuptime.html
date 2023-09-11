@@ -1,1 +1,91 @@
- {% extends 'base_app.html' %}
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+{% endblock %}
+
+{% block content %}
+<div>
+  <h1>Package Uptime Modeller</h1> 
+</div>
+
+<div>
+  <h5>Overview:</h5>
+  <p>This template allows users to evaluate package uptime given information about time between downtime and duration of downtime</p>
+</div> 
+
+<div>
+  <form class ="rounded border bg-light my-2" id="packagedt-form" method="POST" action="{{url_for('availability.packageuptime_result')}}">
+    <h5>Data Form:</h5>
+    <div><small class="form-text text-muted">
+      Notes: <br>
+      - Note1  <br>
+      - Note2  <br>
+      - Note3)  <br>
+    </small></div>
+    <fieldset>
+      <legend>Distribution of Time Between Downtime Events:</legend>
+      <div class="form-group mt-2">
+        <label for="ev_dist"><strong>Distribution Type:</strong></label>
+        <select class="form-control" name="ev_dist" id="ev_dist">      
+          {% for item in ['Beta_Distribution','Exponential_Distribution','Gamma_Distribution','Gumbel_Distribution','Loglogistic_Distribution','Lognormal_Distribution','Normal_Distribution','Weibull_Distribution'] %}
+          <option value="{{item}}">{{item}}</option>
+          {% endfor %}
+        </select>      
+      </div>
+
+      <div class="mt-2"><strong>Distribution Parameters:</strong></div>
+      {% for param in ["ev_param1","ev_param2","ev_param3"] %}
+      <div class="form-group">
+        <label for="{{param}}">Parameter:</label>
+        <input type="number" class="form-control" id="{{param}}" name="{{param}}" placeholder="1" min="0" step=".01" required>
+      </div>
+      {% endfor %}
+    </fieldset>
+    <fieldset class="mt-2">
+      <legend>Distribution of Downtime:</legend>
+      <div class="form-group mt-2">
+        <label for="dt_dist"><strong>Distribution Type:</strong></label>
+        <select class="form-control" name="dt_dist" id="dt_dist">      
+          {% for item in ['Exponential_Distribution','Lognormal_Distribution','Normal_Distribution','constant'] %}
+          <option value="{{item}}">{{item}}</option>
+          {% endfor %}
+        </select>      
+      </div>
+      <div class="mt-2"><strong>Distribution Parameters:</strong></div>
+      {% for param in ["dt_param1","dt_param2","dt_param3"] %}
+      <div class="form-group">
+        <label for="{{param}}">Parameter:</label>
+        <input type="number" class="form-control" id="{{param}}" name="{{param}}" placeholder="1" min="0" step=".01" required>
+      </div>
+      {% endfor %}
+    </fieldset>
+    <div class="form-group">
+      <label for="n_parallel">Number of Parallel units:</label>
+      <input type="number" class="form-control" id="n_parallel" name="n_parallel" placeholder="3" min="1" required>
+    </div>
+    <div class="form-group">
+      <label for="n_req">Number of units required for mission:</label>
+      <input type="number" class="form-control" id="n_req" name="n_req" placeholder="10" min="1">
+    </div>
+    <div class="form-group">
+      <label for="n_sims">Number of Simulations:</label>
+      <input type="number" class="form-control" id="n_sims" name="n_sims" placeholder="10" min="1" required>
+    </div>
+    <div class="form-group">
+      <label for="dur">Duration of Each simulation:</label>
+      <input type="number" class="form-control" id="dur" name="dur" placeholder="10" min="1" required>
+    </div>
+    <div class="d-flex justify-content-center m-2">
+      <button type="submit" class="m-auto">submit</button>  
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{super()}}
+<script src="{{url_for('static', filename='js/dist_param_modifier.js')}}"></script>
+<script src="{{url_for('availability.static', filename='js/package_uptime.js')}}"></script>
+{% endblock %}

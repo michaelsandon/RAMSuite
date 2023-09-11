@@ -53,5 +53,6 @@
 
 {% block scripts %}
 {{super()}}
+<script src="{{url_for('static', filename='js/dist_param_modifier.js')}}"></script>
 <script src="{{url_for('survival.static', filename='js/distsample.js')}}"></script>
 {% endblock %}

@@ -1,56 +1,13 @@
 import matplotlib
 
 matplotlib.use('agg')
-import matplotlib.pyplot as plt
 import reliability.Distributions as reldist
 import reliability.Fitters as relfit
 import reliability.Probability_plotting as relplot
 import reliability.Nonparametric as relnp
 import reliability.Other_functions as reloth
 import pandas as pd
-from json import loads
-from io import BytesIO
-import base64
-from bs4 import BeautifulSoup
-
-
-def helper_formdata_to_df(form_data: dict):
-  result = {}
-  for key in list(form_data.keys()):
-    result[key] = loads(form_data[key])
-  return pd.DataFrame(data=result)
-
-
-def helper_formdata_to_list(form_data: dict):
-  result = {}
-  for key in list(form_data.keys()):
-    if (len(form_data[key]) > 0):
-      result[key] = loads(form_data[key])
-    else:
-      result[key] = None
-  return list(result.values())
-
-
-def helper_series_to_html(pd_series):
-  frame = pd.Series.to_frame(pd_series)
-  return frame.to_html()
-
-
-def helper_add_class_to_tags(base_html, mods=[{'tag': "", 'class': ""}]):
-  #read in html
-  soup = BeautifulSoup(base_html, 'html.parser')
-
-  for mod in mods:
-    if (mod['tag'] != ""):
-      target_tags = soup.find_all(mod['tag'])
-      for tag in target_tags:
-        try:
-          tag['class'].append(mod["class"])
-        except:
-          tag['class'] = mod["class"]
-
-  #convert tree back to string
-  return (str(soup))
+import app.static.helpers.global_formatting_functions as gff
 
 
 def sampling(dist="Weibull_Distribution",
@@ -74,27 +31,15 @@ def sampling(dist="Weibull_Distribution",
   samples_df = pd.DataFrame(samples, columns=['Lifetime'])
 
   if html:
-    sampleresult = samples_df.to_html(justify='left')
-    sampleresult = helper_add_class_to_tags(base_html=sampleresult,
-                                            mods=[{
-                                              'tag': "table",
-                                              'class': "table"
-                                            }, {
-                                              'tag': "thead",
-                                              'class': "table-dark"
-                                            }])
+    sampleresult = gff.helper_format_df_as_std_html(samples_df)
   else:
     sampleresult = samples_df
 
   #histogram
   plot_png = None
   if histogram:
-    figfile = BytesIO()
     reloth.histogram(samples)
-    plt.savefig(figfile, format='png')
-    figfile.seek(0)
-    plot_png = base64.b64encode(figfile.getvalue()).decode('ascii')
-    plt.clf()
+    plot_png = gff.helper_save_curr_plt_as_byte()
 
   return {'samples': sampleresult, 'histogram': plot_png}
 
@@ -135,7 +80,6 @@ def survival_analysis(life_data,
   plots = {}
 
   for key, plotitem in plot_options.items():
-    figfile = BytesIO()
     if plotitem:
       plotted = False
 
@@ -179,22 +123,11 @@ def survival_analysis(life_data,
         plotted = False
 
       if plotted:
-        plt.savefig(figfile, format='png')
-        figfile.seek(0)
-        plot_png = base64.b64encode(figfile.getvalue()).decode('ascii')
+        plot_png = gff.helper_save_curr_plt_as_byte()
         plots[key] = {'title': key, 'img': plot_png}
-        plt.clf()
 
   #adjust outputs if necessary
   if (output == "html"):
-    result = result.to_html(index=False, justify="left")
-    result = helper_add_class_to_tags(base_html=result,
-                                      mods=[{
-                                        'tag': "table",
-                                        'class': "table"
-                                      }, {
-                                        'tag': "thead",
-                                        'class': "table-dark"
-                                      }])
+    result = gff.helper_format_df_as_std_html(result)
 
   return {"Datatables": result, "Plots": plots}
