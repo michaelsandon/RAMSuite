@@ -1,0 +1,20 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+<script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
+{% endblock %}
+{% block content %}
+<div id="taskstatusurl" hidden>
+  {{task_status_url}}
+</div>
+<div id="progress" class="mt-4">
+    <div id="bar"></div>
+    <div>0%</div>    
+    <div>...</div> 
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script src="{{url_for('static', filename='js/task_status.js')}}"></script>
+{% endblock %}

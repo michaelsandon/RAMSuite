@@ -1,14 +1,11 @@
 {% extends 'base_app.html' %}
-{% block head %}
-  {{super()}}
-{% endblock %}
 
 {% block content %}
 <div class="content-container h-100">
-  <h1>Package Uptime Results</h1>
+  <h1>RAM Model Compiler</h1>
   
   <div class="accordion" id="accordionExample">
-    {% for acc_item in ["Timeseries Data", "Summary Statistics","Results Histograms","Results Box Plots"] %}
+    {% for acc_item in ["Equipment Index", "Sub-System Index","System Compiler","Maintenance", "Spares"] %}
     <div class="accordion-item">
       <h2 class="accordion-header" id="heading{{loop.index}}">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
@@ -22,11 +19,8 @@
           {% if loop.index == 1 %}
 
           <div class = "m-2 h-100">
-            <h5 class="d-inline">Simulation Outcomes</h5>
-            <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
-            <div id="sampletablewrapper" class="table-responsive h-100">
-              {{simulation_ts|safe}}
-            </div>
+            <h5 class="d-inline">Equipment Selection</h5>
+            <div id="equipment_table"></div>
           </div>
 
 
@@ -34,20 +28,15 @@
           {% elif loop.index == 2 %}
 
           <div class = "m-2 h-100">
-            <h5 class="d-inline">Simulation Outcomes</h5>
-            <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
-            <div id="sampletablewrapper" class="table-responsive h-100">
-              {{simulation_stats|safe}}
-            </div>
+            <h5 class="d-inline">Sub-System Definition</h5>
+            <div id="sub_system_table"></div>
           </div>
 
           {% elif loop.index == 3 %}
 
           <div class="m-2">
-            {% if histogram is defined and histogram|length %}
-              <h5>Histogram</h5>
-              <img src="data:image/png;base64,{{ histogram }}" width="500">
-            {% endif %}
+            <h5 class="d-inline">System Definition</h5>
+            <div id="system_table"></div>
           </div>
           
           {% endif %}
@@ -60,7 +49,7 @@
 
 {% endblock %}
 
-
 {% block scripts %}
 {{super()}}
+<script src="{{url_for('availability.static', filename='js/ram.js')}}"></script>
 {% endblock %}

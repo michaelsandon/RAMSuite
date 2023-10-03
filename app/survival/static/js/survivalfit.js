@@ -53,34 +53,3 @@ $("#survival-form").submit( function(eventObj) {
       .appendTo("#survival-form");
     return true;
 });
-/*
-$(document).on('submit', '#weibull-form', function(e){
-  
-  var formwb = $('#weibull-form');
-  var submitButton = $('input[type=submit]', formwb);
-  formwb.attr("action", '/survival/result/');*/
- /* e.preventDefault();
-  $.ajax({
-            data : {
-              test : 'michael',
-              tabledata : JSON.stringify(hot.getDataAtCol(0))
-            },
-            type : 'POST',
-            url : '/survival/result/',
-            success: function (response) {
-            }
-        });
-   $.post('/survival/result/',{test: 'michael'})
-       .done(function(data) {
-
-            if (data.error) {
-                $('#errorAlert').text(data.error).show();
-                $('#successAlert').hide();
-            }
-            else {
-                $('#successAlert').text(data.name).show();
-                $('#errorAlert').hide();
-            }
-
-        })
-});*/

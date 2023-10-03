@@ -1,4 +1,4 @@
-run = "python3 run.py"
+run = "bash run.sh"#"python3 run.py"
 
 # The primary language of the repl. There can be others, though!
 language = "python3"

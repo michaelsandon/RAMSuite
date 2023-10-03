@@ -1,7 +1,8 @@
 from app.survival import bp
 from app.survival.static.helpers import survival_functions
+import app.static.helpers.global_formatting_functions as gff
 from flask import render_template, request, redirect, url_for
-from json import loads
+
 
 
 @bp.route('/')
@@ -24,7 +25,7 @@ def distsample_result():
   #perform sampling and generate histogram
   sampling_results = survival_functions.sampling(
     dist=request.form['dist'],
-    params=survival_functions.helper_formdata_to_list(params),
+    params=gff.helper_formdata_to_list(params),
     n_samples=eval(request.form['n_samples']),
     html = True)
   
@@ -48,7 +49,7 @@ def survivalfit_result():
       'censor': request.form['survivalcensor'],
       'qty': request.form['survivalqty']
     }
-    observed_life_data_df = survival_functions.helper_formdata_to_df(
+    observed_life_data_df = gff.helper_formdata_to_df(
       form_data=observed_life_data_dict)
 
     #manage checkboxes

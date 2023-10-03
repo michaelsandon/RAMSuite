@@ -29,7 +29,12 @@ site_map = [{
     'Name': "Single Package Uptime",
     'Route': "availability.packageuptime",
     'Desc': "availability.packageuptime"
-  }]
+  }, {
+    'Name': "RAM Modeller",
+    'Route': "availability.ram",
+    'Desc': "availability.ram"
+  }
+              ]
 }, {
   'Name': 'Cost',
   'Desc': 'Lifecycle cost evaluation module',

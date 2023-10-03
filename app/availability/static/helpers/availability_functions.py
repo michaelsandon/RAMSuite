@@ -33,6 +33,12 @@ def helper_sample_from_dist(dist_as_dict, n_samples=1):
   return samples
 
 
+def helper_update_celery_task_state(task_obj, base_meta, meta_field, meta_value):
+  meta = base_meta
+  meta[meta_field] = meta_value
+  task_obj.update_state(state = "PROGRESS",meta=meta)
+
+
 def _equipment_uptime(tbe={
   'dist': "Weibull_Distribution",
   'par1': 20,
@@ -192,7 +198,7 @@ def package_uptime_thread(tbe={
   result_list = []
 
   #use pool
-  with Pool(processes=30, initializer=helper_init_seed) as pool:
+  with Pool(processes=2, initializer=helper_init_seed) as pool:
     #with ThreadPool(10, initializer=helper_init_seed) as pool:
     all_sims = [
       pool.apply_async(_package_uptime_thread,
@@ -208,6 +214,86 @@ def package_uptime_thread(tbe={
 
   return result
 
+
+def _package_uptime_long(tbe={
+  'dist': "Weibull_Distribution",
+  'par1': 20,
+  'par2': 2,
+  'par3': None
+},
+                           dt={
+                             'dist': "constant",
+                             'par1': 10,
+                             'par2': None,
+                             'par3': None
+                           },
+                           n_parallel=1,
+                           n_req=None,
+                           dur=100,
+                           sim_id=None):
+  #initialise return objects
+  result_list = []
+
+  #use nested threads
+  if n_parallel == 1:
+    result = _equipment_uptime(tbe=tbe, dt=dt, dur=dur, sim_id=sim_id)
+  else:
+    #run sims at equipment level
+    counter = 1
+    for id in range(n_parallel):
+      df = _equipment_uptime(tbe, dt, dur)
+      df.set_index('time', inplace=True)
+      result_list.append(df.squeeze().rename("Eq" + str(counter)))
+      counter = counter + 1
+
+    #combine package
+    result = reduce(
+      lambda df1, df2: pd.merge(
+        df1, df2, right_index=True, left_index=True, how='outer'),
+      result_list).interpolate()
+    result['state'] = result.apply(lambda x: 1 if sum(x) >=
+                                   (n_parallel
+                                    if n_req == None else n_req) else 0,
+                                   axis=1)
+    result = pd.DataFrame({'time': result.index, 'state': result['state']})
+    result.reset_index(inplace=True, drop=True)
+    if sim_id != None:
+      result['simulation'] = sim_id
+
+  return result
+
+
+def package_uptime_long(tbe={
+  'dist': "Weibull_Distribution",
+  'par1': 20,
+  'par2': 2,
+  'par3': None
+},
+                          dt={
+                            'dist': "constant",
+                            'par1': 10,
+                            'par2': None,
+                            'par3': None
+                          },
+                          n_parallel=1,
+                          n_req=None,
+                          dur=100,
+                          n_sims=10,
+                          updates = None):
+  #initialise return objects
+  result_list = []
+
+  #use pool
+  for id in range(n_sims):
+    df = _package_uptime_long(tbe,dt,n_parallel,n_req,dur,id)
+    result_list.append(df)
+    if updates != None:    
+      helper_update_celery_task_state(task_obj = updates[0], base_meta=updates[1], meta_field="current", meta_value = id+1)
+
+  result = pd.concat(result_list)
+
+  return result
+  
 
 def _uptime_statistics(uptime_signal):
   #expect input as a datafrae with only two columns: time, state
@@ -268,10 +354,68 @@ def uptime_statistics_pool(uptime_signals):
   return result
 
 
-def post_package_uptime(request):
+def _uptime_statistics_long(uptime_signal):
+  #expect input as a datafrae with only two columns: time, state
+  calc_df = uptime_signal
+  calc_df['lag_state'] = calc_df['state'].shift(1)
+  #define event indicator
+  calc_df['downtime_ind'] = calc_df.apply(
+    lambda x: 1 if x['state'] != x['lag_state'] and x['state'] == 0 else 0,
+    axis=1)
+
+  #define uptime
+  calc_df['lag_time'] = calc_df['time'].shift(1)
+  calc_df['uptime'] = calc_df.apply(
+    lambda x: x['time'] - x['lag_time']
+    if x['state'] == 1 and x['lag_state'] == 1 else 0,
+    axis=1)
+
+  #define capacity based uptime
+  calc_df['cap_uptime'] = (calc_df['time'] - calc_df['lag_time']) * (
+    (calc_df['state'] + calc_df['lag_state']) / 2)
+
+  #fill any NaN generated from shifts
+  calc_df = calc_df.fillna(0)
+
+  #results
+  result = {}
+  result['dt_events'] = calc_df['downtime_ind'].sum()
+  result['uptime'] = calc_df['uptime'].sum()
+  result['Ao'] = calc_df['uptime'].sum() / (calc_df['time'].max() -
+                                            calc_df['time'].min())
+  result['Ao_cap'] = calc_df['cap_uptime'].sum() / (calc_df['time'].max() -
+                                                    calc_df['time'].min())
+
+  return result
+
+
+
+def uptime_statistics_long(uptime_signals, updates = None):
+  if 'simulation' in uptime_signals.columns:
+    result_list = []
+
+    counter = 0
+    for i in uptime_signals.simulation.unique():
+      counter = counter +1
+      uptime_signal = uptime_signals[uptime_signals['simulation'] == i]
+      stat = _uptime_statistics_long(uptime_signal)
+      result_list.append(pd.DataFrame([stat]))
+      if updates != None:    
+        helper_update_celery_task_state(task_obj = updates[0], base_meta=updates[1], meta_field="current", meta_value = counter)
+
+    result = pd.concat(result_list)
+
+  else:
+    result = pd.DataFrame(_uptime_statistics_long(uptime_signals))
+
+  return result
+
+
+  
+def post_package_uptime(self, request_form):
   result = {}
 
-  request_data = gff.helper_format_request(request.form)
+  request_data = gff.helper_format_request(request_form)#request.form)
 
   #organise request data into inputs
   tbe = {
@@ -288,16 +432,98 @@ def post_package_uptime(request):
     'par3': request_data['dt_param3']
   }
 
+  self.update_state(state='PROGRESS',
+                    meta={
+                      'current': 0,
+                      'total': request_data['n_sims'],
+                      'status': "Running Simulations"
+                    })
+
   simulation_ts = package_uptime_thread(tbe=tbe,
                                         dt=dt,
                                         n_parallel=request_data['n_parallel'],
                                         n_req=request_data['n_req'],
                                         dur=request_data['dur'],
                                         n_sims=request_data['n_sims'])
-
+  
+  
+  self.update_state(state='PROGRESS',
+                    meta={
+                      'current': 0,
+                      'total': request_data['n_sims'],
+                      'status': "Preparing Results"
+                    })
+  
   simulation_stats = uptime_statistics_pool(simulation_ts)
 
   result['ts'] = gff.helper_format_df_as_std_html(simulation_ts)
+  result['stats'] = gff.helper_format_df_as_std_html(simulation_stats)
+
+  return result
+
+
+def post_package_uptime_v2(self, request_form):
+  result = {}
+
+  request_data = gff.helper_format_request(request_form)#request.form)
+
+  #organise request data into inputs
+  tbe = {
+    'dist': request_data['ev_dist'],
+    'par1': request_data['ev_param1'],
+    'par2': request_data['ev_param2'],
+    'par3': request_data['ev_param3']
+  }
+
+  dt = {
+    'dist': request_data['dt_dist'],
+    'par1': request_data['dt_param1'],
+    'par2': request_data['dt_param2'],
+    'par3': request_data['dt_param3']
+  }
+
+  meta = {'current': 0,
+          'total': request_data['n_sims'],
+          'status': "Running Simulations"
+          }
+  
+  self.update_state(state='PROGRESS',
+                    meta=meta)
+
+  simulation_ts = package_uptime_long(tbe=tbe,
+                                      dt=dt,
+                                      n_parallel=request_data['n_parallel'],
+                                      n_req=request_data['n_req'],
+                                      dur=request_data['dur'],
+                                      n_sims=request_data['n_sims'],
+                                      updates = [self,meta])
+  
+
+  meta = {'current': 0,
+          'total': request_data['n_sims'],
+          'status': "Processing Results"
+          }
+
+  self.update_state(state='PROGRESS',
+                    meta= meta)
+  
+  simulation_stats = uptime_statistics_long(simulation_ts, updates = [self,meta])
+
+  self.update_state(state='PROGRESS',
+                    meta= {'current': 0,
+                            'total': 2,
+                            'status': "Formatting Results"
+                            })
+  
+  result['ts'] = gff.helper_format_df_as_std_html(simulation_ts.head(100))
+  simulation_ts.reset_index(inplace=True)
+  result['ts_df'] = simulation_ts.to_json()
+
+  self.update_state(state='PROGRESS',
+                  meta= {'current': 1,
+                          'total': 2,
+                          'status': "Formatting Results"
+                          })
   result['stats'] = gff.helper_format_df_as_std_html(simulation_stats)
 
   return result

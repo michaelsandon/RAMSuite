@@ -1,12 +1,19 @@
 from flask import Flask
 from config import Config
 from app.main.main_data import site_map
-
+from app.utils import make_celery
+from redis import Redis
 
 def create_app(config_class=Config):
   app = Flask(__name__)
   app.config.from_object(config_class)
 
+  redis = Redis(host='localhost', port=6379)
+
+  #celery
+  celery = make_celery(app)
+  celery.set_default()
+  
   # Initialize Flask extensions here
 
   # Global vars
@@ -25,4 +32,6 @@ def create_app(config_class=Config):
   app.register_blueprint(availability_bp, url_prefix='/availability')
   # main driver function
 
-  return app
+  return app, celery, redis
+
+
