@@ -4,8 +4,34 @@
       {
         "id": "965bac7d-b868-4041-a4be-f93884f3e26d",
         "line": 11,
-        "version": 1643,
+        "version": 1766,
         "index": 365
+      }
+    ],
+    "app/availability/static/js/ram.js": [
+      {
+        "id": "d8c6cd01-ea71-4ec3-9596-94c2ab2e1736",
+        "line": 53,
+        "version": 466,
+        "index": 1169
+      },
+      {
+        "id": "db890a82-eca1-4ed9-9701-fe82f1138c85",
+        "line": 55,
+        "version": 466,
+        "index": 1186
+      },
+      {
+        "id": "95421459-8352-442e-92e5-9caf676efa7c",
+        "line": 58,
+        "version": 466,
+        "index": 1239
+      },
+      {
+        "id": "80308179-6839-48c5-babd-757a1f5b818f",
+        "line": 58,
+        "version": 466,
+        "index": 1247
       }
     ]
   }

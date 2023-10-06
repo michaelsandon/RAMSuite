@@ -1,5 +1,5 @@
 from celery import Celery, Task
-
+from flask_sqlalchemy import SQLAlchemy
 #def celery_init_app(app: Flask) -> Celery:
 #    class FlaskTask(Task):
 #        def __call__(self, *args: object, **kwargs: object) -> object:
@@ -23,3 +23,7 @@ def make_celery(app):
 
     celery.Task = ContextTask
     return celery
+
+
+##Database work
+ramdb = SQLAlchemy()

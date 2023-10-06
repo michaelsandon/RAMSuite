@@ -38,7 +38,16 @@ def packageuptime_result(task_id):
 def ram():
   return render_template('availability/ram.html')
 
-
+@bp.route('/loadrammodel/<model_id>')
+def loadrammodel(model_id):
+  if model_id == '0':
+    ex = ram_funcs.rbd_examples()
+    model = ex["small"]["firewater"]
+    response = model.to_json()
+  else:
+    response = jsonify({'error':"model number invalid"})
+  return response
+  
 @bp.route('/rbd/')
 def rbd():
   ex = ram_funcs.rbd_examples()
@@ -56,7 +65,6 @@ def rbd():
 def post_package_uptime_celery(self,request_form):
   #print("test")
   result = av.post_package_uptime_v2(self,request_form=request_form)
-  print("result collected")
   return result
 
 @bp.route('/taskstatus/<task_id>')

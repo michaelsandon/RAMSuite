@@ -1,7 +1,7 @@
 {% extends 'base_app.html' %}
 
 {% block content %}
-<div class="content-container h-100">
+<div class="content-container h-75">
   <h1>RAM Model Compiler</h1>
   
   <div class="accordion" id="accordionExample">
@@ -34,7 +34,7 @@
 
           {% elif loop.index == 3 %}
 
-          <div class="m-2">
+          <div class="m-2 h-100">
             <h5 class="d-inline">System Definition</h5>
             <div id="system_table"></div>
           </div>
@@ -46,6 +46,10 @@
     {% endfor %}
   </div>
 </div>
+
+<button id= "load_ram_model" type="button" class="btn btn-primary">load RAM</button>
+
+<button id= "generate_rbd" type="button" class="btn btn-primary">Draw RBD</button>
 
 {% endblock %}
 

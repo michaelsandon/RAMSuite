@@ -66,9 +66,44 @@ def rbd_examples():
   df = add_rbd_block(RBD = df, Tag = "Pump 3")
   pumps = df               
   
-  result = {"small": {"firewater" : firewater,
+  result = {"compiled": {"firewater" : firewater,
                         "Instrument Loop" : instrument_loop,
-                        "Pump System" : pumps}}
+                        "Pump System" : pumps},
+           "deconstructed": {
+             "firewater":{
+               "meta":{
+                 "title":"Firewater",
+                 "desc":"Firewater system - pumps and spray sections"},
+               "equipment":[
+                 {"meta":{"tag":"Nozzles", "capacity":0}},
+                 {"meta":{"tag":"Ringmain", "capacity":0}},
+                 {"meta":{"tag":"Pump", "capacity":0}},
+                 {"meta":{"tag":"Motor", "capacity":0}}
+               ],
+               "sub-systems":[
+                 {"tag":"Pump Package",
+                 "structure":[
+                   {"tag":"Pump Package","type":"System - Series","level":1},
+                   {"tag":"Pump","type":"Equipment","level":2,"localid":3},
+                   {"tag":"Pump","type":"Equipment","level":2,"localid":4}
+                 ]},
+                 {"tag":"Pump System",
+                 "structure":[
+                   {"tag":"Pump System","type":"System - Parallel","level":1,"m":1,"n":2},
+                   {"tag":"Pump Package","type":"Subsystem","level":2,"localid":1},
+                   {"tag":"Pump Package","type":"Subsystem","level":2,"localid":1}
+                 ]}
+               ],
+               "system":{}},
+             "stabilisation": {
+               "meta":{
+                 "title":"condensate stabilisation system",
+                 "desc":"5 train stabilisation system"},
+               "equipment":[],
+               "sub-systems":{},
+               "system":{}}
+           }}
+  
   return(result)
 
 
@@ -180,9 +215,6 @@ def draw_rbd_image(rbd_size, rbd_config):
   #define Matplotlib figure and axis
   fig, ax = plt.subplots()
   
-  #create simple line plot
-  #ax.plot([0, rbd_size["x"]],[0, rbd_size["y"]])
-  
   #plot blocks
   for block_index in rbd_config.index:
     ax.add_patch(Rectangle((rbd_config.x[block_index]-rbd_config.Width[block_index]/2, rbd_config.y[block_index]-rbd_config.Height[block_index]/2), rbd_config.Width[block_index], rbd_config.Height[block_index], edgecolor = 'black'))
@@ -193,25 +225,21 @@ def draw_rbd_image(rbd_size, rbd_config):
       x1 = rbd_config.x[block_index] # middle of current block
       x2 = x1 # middle of 'to' block
       y1 = rbd_config.y2[block_index] # top of current block
-      y2 = rbd_config.loc[rbd_config.id == rbd_config.conn_to[block_index], 'y2'].values[0] # middle of 'to' block
-      print(x1)
-      print(x2)
-      print(y1)
-      print(y2)
-      ax.plot([x1, x2],[y1, y2])
+      y2 = rbd_config.loc[rbd_config.id == rbd_config.conn_to[block_index], 'y1'].values[0] # middle of 'to' block
+      ax.plot([x1, x2],[y1, y2],color='black')
     elif(rbd_config.conn[block_index]=="parallel"):
       x1 = rbd_config.x[block_index] # middle of current block
-      x2 = rbd_config.x[rbd_config.id == rbd_config.conn_to[block_index]] # middle of 'to' block
+      x2 = rbd_config.x[rbd_config.id == rbd_config.conn_to[block_index]].values[0] # middle of 'to' block
       y1 = rbd_config.y2[block_index]+0.25 # top of current block
       y1a = rbd_config.y2[block_index]
       y2 = rbd_config.y1[block_index]-0.25 # middle of 'to' block
       y2a = rbd_config.y1[block_index]
-      ax.plot([x1, x2],[y1, y1])
-      ax.plot([x1, x1],[y1a, y1])
-      ax.plot([x2, x2],[y1a, y1])
-      ax.plot([x1, x2],[y2, y2])
-      ax.plot([x1, x1],[y2a, y2])
-      ax.plot([x2, x2],[y2a, y2])
+      ax.plot([x1, x2],[y1, y1],color='black')
+      ax.plot([x1, x1],[y1a, y1],color='black')
+      ax.plot([x2, x2],[y1a, y1],color='black')
+      ax.plot([x1, x2],[y2, y2],color='black')
+      ax.plot([x1, x1],[y2a, y2],color='black')
+      ax.plot([x2, x2],[y2a, y2],color='black')
       
 
 
@@ -219,6 +247,8 @@ def draw_rbd_image(rbd_size, rbd_config):
   #adjust axes
   plt.xlim(0, rbd_size["x"])
   plt.ylim(0, rbd_size["y"])
+  plt.axis('off')
+  
   #display plot
   #plt.show()
 
