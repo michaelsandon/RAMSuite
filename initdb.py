@@ -51,34 +51,38 @@ with Flask_app.app_context():
     for equip in sys["equipment"]:
       model.equipment.append(ram_model_equipment(**equip["meta"]))
 
+    #add equipment and model in one
+    ramdb.session.add(model)
+    ramdb.session.flush()
+    
     #add subsystems and subsystem-structures
     for subsys in sys["sub-systems"]:
-      ss = ram_model_subsystem_index(tag=subsys["tag"])
+      ss = ram_model_subsystem_index(tag=subsys["tag"], modelid=model.id)
+      ramdb.session.add(ss)
+      ramdb.session.flush()
+      
       for subsysblock in subsys["structure"]:
         if subsysblock["type"] == "Equipment":
           block = ram_model_subsystem_structure(tag = subsysblock["tag"],
                                                 type = subsysblock["type"],
                                                 level = subsysblock["level"],
-                                                refid = model.equipment[subsysblock["localid"]-1].id
+                                                refid = model.equipment[subsysblock["localid"]-1].id,
+                                                subsystemid = ss.id
                                                )
         elif subsysblock["type"] == "Subsystem":
           block = ram_model_subsystem_structure(tag = subsysblock["tag"],
                                                 type = subsysblock["type"],
                                                 level = subsysblock["level"],
-                                                refid = model.subsystems[subsysblock["localid"]-1].id
+                                                refid = model.subsystems[subsysblock["localid"]-1].id,
+                                                subsystemid = ss.id
                                                )
         else:
+          subsysblock["subsystemid"] = ss.id
           block = ram_model_subsystem_structure(**subsysblock)
 
-        ss.ss_structure.append(block)
-
-      model.subsystems.append(ss)
-
-    #add equipment and model in one
-    ramdb.session.add(model)
-
-    #refresh db to have unique ids available
-    #ramdb.flush()
+        ramdb.session.add(block)
+        ramdb.session.flush()
+       
 
 
       
