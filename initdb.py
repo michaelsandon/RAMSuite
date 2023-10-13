@@ -23,12 +23,12 @@ with Flask_app.app_context():
   #print(ramdb)
 
   #load and delete current db tables
-  ramdb.reflect()
+  #ramdb.reflect()
   #for t in ramdb.metadata.tables.values():
     #print(t.name)
     #t.drop(ramdb.engine)
   ramdb.drop_all()
-  ramdb.metadata.clear()
+  #ramdb.metadata.clear()
 
 
   #load models & create tables
@@ -36,6 +36,7 @@ with Flask_app.app_context():
   from app.models.ram import ram_model_equipment
   from app.models.ram import ram_model_subsystem_index
   from app.models.ram import ram_model_subsystem_structure
+  from app.models.ram import ram_model_system_structure
   ramdb.create_all()
   
   #Add example data
@@ -82,11 +83,29 @@ with Flask_app.app_context():
 
         ramdb.session.add(block)
         ramdb.session.flush()
+
+    #add system structure
+    for systemblock in sys["system"]:
+      if systemblock["type"] == "Equipment":
+        block = ram_model_system_structure(tag = systemblock["tag"],
+                                            type = systemblock["type"],
+                                            level = systemblock["level"],
+                                            refid = model.equipment[systemblock["localid"]-1].id,
+                                            modelid = model.id
+                                            )
+      elif systemblock["type"] == "Subsystem":
+        block = ram_model_system_structure(tag = systemblock["tag"],
+                                            type = systemblock["type"],
+                                            level = systemblock["level"],
+                                            refid = model.subsystems[systemblock["localid"]-1].id,
+                                            modelid = model.id
+                                           )
+      else:
+        systemblock["modelid"] = model.id
+        block = ram_model_system_structure(**systemblock)
+
+      ramdb.session.add(block)
        
-
-
-      
-  
   #ramdb.session.execute(ram_model_index.__table__.insert(), model_meta)
   #ram_models = ram_model.query.all()
 

@@ -1,10 +1,14 @@
 const equipment_table = document.querySelector('#equipment_table');
+const sub_system_table = document.querySelector('#sub_system_table');
 const system_table = document.querySelector('#system_table');
+const load_progress_label = document.querySelector("label[for='load-progress-bar']")
+const load_progress_bar = document.querySelector("#load-progress-bar")
+const loaded_model_id = document.querySelector("#loaded-model-id")
+const loaded_model_title = document.querySelector("#loaded-model-title")
+// url = "/availability/loadrammodel/0"
 
-const url = "/availability/loadrammodel/0"
 
-
-const hot = new Handsontable(equipment_table, {
+/*const hot = new Handsontable(equipment_table, {
   data: [
     [10, false,1],
     [8, true,null],
@@ -43,6 +47,7 @@ hot2 = new Handsontable(system_table, {
   height: 'auto',
   licenseKey: 'non-commercial-and-evaluation' // for non-commercial use only
 })
+
                        
 $("#load_ram_model").click(function(){
   alert("The ram model load was clicked.");
@@ -64,4 +69,68 @@ $("#load_ram_model").click(function(){
     }; 
     hot2.loadData(res_array)
   });
+});*/
+
+$('input[name="loadcreatetoggle"]').change(function(){
+  $("#formloadmodel")[0].hidden = !$("#formloadmodel")[0].hidden
+  $("#formcreatemodel")[0].hidden = !$("#formcreatemodel")[0].hidden
+})
+
+$("#formloadmodel").on("submit",function( event ) {
+  event.preventDefault();
+  target_id = $("#rammodelselect")[0].value
+  requrl = "/availability/ram/model/"+target_id+"/equipment/html"
+
+  load_progress_label.hidden = false
+  load_progress_bar.hidden = false
+
+  load_progress_label.innerText = "loading equipment"
+  load_progress_bar.value = 0
+  
+  fetch(requrl)
+  .then((response) => response.text())
+  .then((text) => {
+    equipment_table.innerHTML = text
+  });
+
+  load_progress_label.innerText = "loading subsystems"
+  load_progress_bar.value = 30
+  
+  requrl = "/availability/ram/model/"+target_id+"/subsystems/html-comp"
+
+  fetch(requrl)
+  .then((response) => response.text())
+  .then((text) => {
+    sub_system_table.innerHTML = text
+  });
+
+  load_progress_label.innerText = "loading system"
+  load_progress_bar.value = 60
+
+  requrl = "/availability/ram/model/"+target_id+"/system/html"
+  
+  fetch(requrl)
+  .then((response) => response.text())
+  .then((text) => {
+    system_table.innerHTML = text
+  });
+
+  requrl = "/availability/ram/model/"+target_id+"/index/"
+  
+  fetch(requrl)
+  .then((response) => response.json())
+  .then((data) => {
+    loaded_model_id.innerText = data.id
+    loaded_model_title.innerText = data.title
+  });
+
+
+  load_progress_label.innerText = "load complete"
+  load_progress_bar.value = 100
+  
+  load_progress_label.hidden = true
+  load_progress_bar.hidden = true
+  
+
+
 });
