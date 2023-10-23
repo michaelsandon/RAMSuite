@@ -45,6 +45,7 @@ def new_model(title, desc, type="System - Series"):
           "system":[],
           "maintenance_cbm":[],
           "inventory":[],
+          "material_lists":[]
           }
   return model
 
@@ -60,9 +61,9 @@ def add_eq_to_model(model,eq):
   return model
 
 #helperfunction for init fm
-def new_fm(fm_desc,tbe_dist,tbe_par1,ttd_dist,ttd_par1,tbe_par2=None,tbe_par3=None,ttd_par2=None,ttd_par3=None,resp_cbm=[]):
+def new_fm(fm_desc,tbf_dist,tbf_par1,ttd_dist,ttd_par1,tbf_par2=None,tbf_par3=None,ttd_par2=None,ttd_par3=None,resp_cbm=[]):
   fm = {"desc":fm_desc,
-        "tbe":{'dist': tbe_dist,'par1': tbe_par1,'par2': tbe_par2,'par3': tbe_par3},
+        "tbf":{'dist': tbf_dist,'par1': tbf_par1,'par2': tbf_par2,'par3': tbf_par3},
         "ttd":{'dist': ttd_dist,'par1': ttd_par1,'par2': ttd_par2,'par3': ttd_par3},
         "responses_on_failure":{"cbm":resp_cbm} #selected from cbm tasks
         }
@@ -94,7 +95,7 @@ def add_block_to_sys(model,block):
   return model
 
 def new_material(material_desc,min_level=0,max_level=5,lead_time=8760):
-  matl = {"desc":material_desc,"min":min_level,"max":max_level,"leadtime":lead_time}
+  matl = {"desc":material_desc,"min_lvl":min_level,"max_lvl":max_level,"leadtime":lead_time}
   return matl
 
 def add_matl_to_inventory(model,matl):
@@ -110,23 +111,34 @@ def new_tbm_maint_task(desc,target_fm,actvmt,aam_val,vlam_val,aam_is_abs=True,vl
   mt = {"desc":desc, "target_fm":target_fm, "active_maint_time":actvmt, "availability_after_maint":aam_val, "availability_after_maintenance_is_abs":aam_is_abs,"virtual_life_after_maint":vlam_val,"virtual_life_after_maint_is_abs":vlam_is_abs, "online_or_offline":on_or_off, "time_between_calls":tbc,"materials":[]}
   return mt
 
-def new_cbm_maint_task(desc,target_fm,actvmt,aam_val,vlam_val,aam_is_abs=True,vlam_is_abs=True,on_or_off="off",isdp_req=False):
+def new_cbm_maint_task(desc,target_fm,actvmt,aam_val,vlam_val,aam_is_abs=True,vlam_is_abs=True,executed_offline=True,isdp_req=False, component_list_id=None):
   #actvmt = active_maint_time
   #aam = availabiltiy after maintenance
   #vlam = virtual life after maintenance
   #on_or_off = online or offline
   #tbc = time between calls in hours e.g. every 24 hrs, weekly (24*7)
-  mt = {"desc":desc, "target_fm":target_fm, "active_maint_time":actvmt, "availability_after_maint":aam_val, "availability_after_maintenance_is_abs":aam_is_abs,"virtual_life_after_maint":vlam_val,"virtual_life_after_maint_is_abs":vlam_is_abs, "online_or_offline":on_or_off, "isdp_req":isdp_req,"materials":[]}
+  mt = {"desc":desc, "target_fm":target_fm, "active_maint_time":actvmt, "availability_after_maint":aam_val, "availability_after_maintenance_is_abs":aam_is_abs,"virtual_life_after_maint":vlam_val,"virtual_life_after_maint_is_abs":vlam_is_abs, "executed_offline":executed_offline, "isdp_req":isdp_req,"component_list_id":component_list_id}
   return mt
 
+def new_matl_list(desc):
+  matl_list={"desc":desc,"materials":[]}
+  return matl_list
+  
 def new_component_req(matlid,qty):
-  req = {"material":matlid,"qty":qty}
+  req = {"materialid":matlid,"qty":qty}
   return req
 
-def add_matl_req_to_maint_task(task,req):
-  task["materials"].append(req)
-  return task
+def add_matl_req_to_matl_list(matl_list,req):
+  matl_list["materials"].append(req)
+  return matl_list
 
+def add_matl_list_to_model(model,matl_list):
+  model["material_lists"].append(matl_list)
+  return model
+
+def add_cbm_task_to_model(model,task):
+  model["maintenance_cbm"].append(task)
+  return model
 
 #function to develop a compiled rbd of a firewater system
 def fw_compiled_rbd():
@@ -173,14 +185,14 @@ def fw_decon_ram():
   
   #create fms for pumps before adding them
   pump = new_equipment(eq_tag="Pump")
-  pump = add_fm_to_eq(eq = pump, fm = new_fm(fm_desc="pump impeller failure",tbe_dist= "Weibull_Distribution", tbe_par1=2*8760,
-                                             tbe_par2= 2, ttd_dist="const",ttd_par1= 1,resp_cbm=[1]))
+  pump = add_fm_to_eq(eq = pump, fm = new_fm(fm_desc="pump impeller failure",tbf_dist= "Weibull_Distribution", tbf_par1=2*8760,
+                                             tbf_par2= 2, ttd_dist="Constant",ttd_par1= 1,resp_cbm=[1]))
   model = add_eq_to_model(model = model, eq=pump)
 
   #create fms for motor
   motor = new_equipment(eq_tag="Motor")
-  motor = add_fm_to_eq(eq = motor, fm = new_fm(fm_desc="motor winding failure",tbe_dist= "Weibull_Distribution", tbe_par1=10*8760,
-                                               tbe_par2= 1.4, ttd_dist="const",ttd_par1= 1,resp_cbm=[2]))
+  motor = add_fm_to_eq(eq = motor, fm = new_fm(fm_desc="motor winding failure",tbf_dist= "Weibull_Distribution", tbf_par1=10*8760,
+                                               tbf_par2= 1.4, ttd_dist="Constant",ttd_par1= 1,resp_cbm=[2]))
   model = add_eq_to_model(model = model, eq=motor)
 
   #create subsystems
@@ -202,37 +214,40 @@ def fw_decon_ram():
   model = add_block_to_sys(model,new_block(block_tag = "Nozzles",localid=1))
 
   #create inventory
-  model = add_matl_to_inventory(model,new_material(matl_tag="Pump Assembly",min_level=1,max_level=2,lead_time=4380))
-  model = add_matl_to_inventory(model,new_material(matl_tag="Pump Motor",min_level=1,max_level=2,lead_time=8760))
+  model = add_matl_to_inventory(model,new_material(material_desc="Pump Assembly",min_level=1,max_level=2,lead_time=4380))
+  model = add_matl_to_inventory(model,new_material(material_desc="Pump Motor",min_level=1,max_level=2,lead_time=8760))
 
+  #create material_lists
+  list1 = add_matl_req_to_matl_list(matl_list = new_matl_list(desc="New Pump"), req = new_component_req(matlid=1,qty=1))
+  list2 = add_matl_req_to_matl_list(matl_list = new_matl_list(desc="New Motor"), req = new_component_req(matlid=2,qty=1))
+  model = add_matl_list_to_model(model, list1)
+  model = add_matl_list_to_model(model, list2)
+  
   #create maintenance tasks and add to model
-  tsk1 = new_cbm_maint_task(desc = "Replace Pump", target_fm=1, actvmt=30,aam=1,vlam=0)
-  tsk1 = add_matl_req_to_maint_task(task=tsk1, req = new_component_req(matlid=1,qty=1))
-  tsk2 = new_cbm_maint_task(desc = "Replace Motor", target_fm=1, actvmt=24,aam=1,vlam=0)
-  tsk2 = add_matl_req_to_maint_task(task=tsk2, req = new_component_req(matlid=2,qty=1))
-  model = add_task_to_model(model,tsk1)
-  model = add_task_to_model(model,tsk2)
+  tsk1 = new_cbm_maint_task(desc = "Replace Pump", target_fm=1, actvmt=30,aam_val=1,vlam_val=0, component_list_id=1)
+  tsk2 = new_cbm_maint_task(desc = "Replace Motor", target_fm=2, actvmt=24,aam_val=1,vlam_val=0, component_list_id=2)
+  model = add_cbm_task_to_model(model,tsk1)
+  model = add_cbm_task_to_model(model,tsk2)
   
   return model
 
 
+
+def stabs_decon_ram():
+#create model
+  model = new_model(title="Stabilisation", desc="5 train stabilisation system")
+
+  return model
+
 #function for generating ram examples
 def rbd_examples():
-
-  decon_stabs = {
-               "meta":{
-                 "title":"condensate stabilisation system",
-                 "desc":"5 train stabilisation system"},
-               "equipment":[],
-               "sub-systems":[],
-               "system":[]}
   
   result = {"compiled": {"firewater" : fw_compiled_rbd(),
                         "Instrument Loop" : il_compiled_rbd(),
                         "Pump System" : pumps_compiled_rbd()},
            "deconstructed": {
              "firewater":fw_decon_ram(),
-             "stabilisation":decon_stabs 
+             "stabilisation":stabs_decon_ram()
            }}
   
   return(result)

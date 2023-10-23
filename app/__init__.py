@@ -40,3 +40,8 @@ def create_app(config_class=Config):
   return app, celery, redis, ramdb
 
 
+def create_app_2():
+  return None
+  
+
+

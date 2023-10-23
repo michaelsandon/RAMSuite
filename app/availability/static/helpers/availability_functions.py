@@ -13,7 +13,7 @@ def helper_init_seed():
 
 def helper_sample_from_dist(dist_as_dict, n_samples=1):
 
-  if dist_as_dict['dist'] == 'constant':
+  if dist_as_dict['dist'] in ['constant','const','Constant','Const']:
     samples = [dist_as_dict['par1']] * n_samples
   else:
     #acquire dist
