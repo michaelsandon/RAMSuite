@@ -28,10 +28,6 @@ def helper_sample_from_dist(dist_as_dict, n_samples=1):
   return samples
 
 
-def helper_update_celery_task_state(task_obj, base_meta, meta_field, meta_value):
-  meta = base_meta
-  meta[meta_field] = meta_value
-  task_obj.update_state(state = "PROGRESS",meta=meta)
 
 
 def _equipment_uptime(tbe={
@@ -77,6 +73,8 @@ def _equipment_uptime(tbe={
   #state_df.set_index('time', inplace=True)
 
   return state_df
+
+
 
 
 #need to refactor this code NOT in USE
@@ -282,8 +280,11 @@ def package_uptime_long(tbe={
   for id in range(n_sims):
     df = _package_uptime_long(tbe,dt,n_parallel,n_req,dur,id)
     result_list.append(df)
-    if updates != None:    
-      helper_update_celery_task_state(task_obj = updates[0], base_meta=updates[1], meta_field="current", meta_value = id+1)
+    if updates != None:
+      task_obj = updates[0]
+      meta = updates[1]
+      meta["current"]=id+1
+      task_obj.update_state(state = "PROGRESS",meta=meta)
 
   result = pd.concat(result_list)
 
@@ -395,8 +396,11 @@ def uptime_statistics_long(uptime_signals, updates = None):
       uptime_signal = uptime_signals[uptime_signals['simulation'] == i]
       stat = _uptime_statistics_long(uptime_signal)
       result_list.append(pd.DataFrame([stat]))
-      if updates != None:    
-        helper_update_celery_task_state(task_obj = updates[0], base_meta=updates[1], meta_field="current", meta_value = counter)
+      if updates != None:
+        task_obj = updates[0]
+        meta = updates[1]
+        meta["current"]=counter
+        task_obj.update_state(state = "PROGRESS",meta=meta)
 
     result = pd.concat(result_list)
 
@@ -406,8 +410,9 @@ def uptime_statistics_long(uptime_signals, updates = None):
   return result
 
 
+
   
-def post_package_uptime(self, request_form):
+def package_uptime_parallel_process(self, request_form):
   result = {}
 
   request_data = gff.helper_format_request(request_form)#request.form)
@@ -457,7 +462,9 @@ def post_package_uptime(self, request_form):
   return result
 
 
-def post_package_uptime_v2(self, request_form):
+
+
+def package_uptime_celery(self, request_form):
   result = {}
 
   request_data = gff.helper_format_request(request_form)#request.form)

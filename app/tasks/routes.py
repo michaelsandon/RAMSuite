@@ -35,8 +35,6 @@ def taskstatus(task_id):
 def task(task_id):
   task = celery_task_router.AsyncResult(task_id)
   if task.state == 'SUCCESS':
-    print(task)
-    print(task.args)
-    return redirect(url_for('availability.packageuptime_result', task_id=task_id))
+    return redirect(url_for(task.args[2], task_id=task_id))
   else:
     return render_template('tasks/task.html', task_status_url = url_for('tasks.taskstatus',task_id=task_id))

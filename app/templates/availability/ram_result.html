@@ -1,0 +1,66 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+{% endblock %}
+
+{% block content %}
+<div class="content-container h-100">
+  <h1>RAM Results</h1>
+  
+  <div class="accordion" id="accordionExample">
+    {% for acc_item in ["Event Log", "Lifetimes Timeseries","Inventory Timeseries","Statistics"] %}
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="heading{{loop.index}}">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
+          {{acc_item}}
+        </button>
+      </h2>
+      <div id="collapse{{loop.index}}" class="accordion-collapse collapse" aria-labelledby="heading{{loop.index}}" data-bs-parent="#accordionExample">
+        <div class="accordion-body">
+
+          <!---
+          {% if loop.index == 1 %}
+
+          <div class = "m-2 h-100">
+            <h5 class="d-inline">Simulation Outcomes</h5>
+            <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
+            <div id="sampletablewrapper" class="table-responsive h-100">
+              {{simulation_ts|safe}}
+            </div>
+          </div>
+
+
+          
+          {% elif loop.index == 2 %}
+
+          <div class = "m-2 h-100">
+            <h5 class="d-inline">Simulation Outcomes</h5>
+            <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
+            <div id="sampletablewrapper" class="table-responsive h-100">
+              {{simulation_stats|safe}}
+            </div>
+          </div>
+
+          {% elif loop.index == 3 %}
+
+          <div class="m-2">
+            {% if histogram is defined and histogram|length %}
+              <h5>Histogram</h5>
+              <img src="data:image/png;base64,{{ histogram }}" width="500">
+            {% endif %}
+          </div>
+          
+          {% endif %} --->
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{super()}}
+{% endblock %}

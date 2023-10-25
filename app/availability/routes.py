@@ -5,7 +5,6 @@ import app.availability.static.helpers.ram_db_functions as ram_db_funcs
 import app.static.helpers.global_formatting_functions as gff
 
 from flask import render_template, request, jsonify, url_for, redirect
-from celery import shared_task
 
 from app.tasks.shared_tasks import celery_task_router
 
@@ -18,22 +17,17 @@ def index():
 def packageuptime():
   return render_template('availability/packageuptime.html')
 
-@bp.route('/packageuptime/result/<task_id>', methods=["GET", "POST"])
-def packageuptime_result(task_id):
+@bp.route('/packageuptime/result/', methods=["POST"])
+@bp.route('/packageuptime/result/<task_id>', methods=["GET"])
+def packageuptime_result(task_id=None):
   if request.method == "POST":
-
-    
-    #task = post_package_uptime_celery.apply_async(args = [request.form])
-    #return redirect(url_for('availability.task', task_id=task.id))
-    task = celery_task_router.apply_async(args = [request.form,"av-pu"])
+    task = celery_task_router.apply_async(args = [request.form,"av-pu",'availability.packageuptime_result'])
     return redirect(url_for('tasks.task', task_id=task.id))
     
   else:
     
-    #task = post_package_uptime_celery.AsyncResult(task_id)
     task = celery_task_router.AsyncResult(task_id)
     post_result = task.result
-    #print(post_result)
     return render_template('availability/packageuptime_result.html',
                            simulation_stats=post_result['stats'],
                           simulation_ts = post_result['ts'])
@@ -44,6 +38,10 @@ def ram():
   models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
   return render_template('availability/ram.html', models = models)
 
+@bp.route('/ram/result/', methods=["POST","GET"])
+def ram_result():
+  return render_template('availability/ram_result.html')
+  
 @bp.route('/ram/model/<model_id>/all')
 def api_ram_model_all(model_id):
   response = ram_db_funcs.helper_query_ram_model_db_by_model_id(modelid=model_id)
@@ -56,7 +54,6 @@ def api_ram_model_detail(model_id, table, datatype = None):
   response = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=[table], modelid=model_id,format=datatype)
 
   return response
-
 
 @bp.route('/ram/model/<model_id>/subsystems/')
 def content_ram_model_subsystems(model_id, datatype = None):
@@ -93,53 +90,6 @@ def model_rbd(model_id,image = None):
     response = gff.helper_format_df_as_std_html(rbd_file["config"])#compiled_sys)
   return response
   #return gff.helper_format_df_as_std_html(compiled_sys)
-
-
-
-@shared_task(bind=True, acks_late = True)
-def post_package_uptime_celery(self,request_form):
-  #print("test")
-  result = av.post_package_uptime_v2(self,request_form=request_form)
-  return result
-
-@bp.route('/taskstatus/<task_id>')
-def taskstatus(task_id):
-  task = post_package_uptime_celery.AsyncResult(task_id)
-  if task.state == 'PENDING':
-    # job did not start yet
-    response = {
-        'state': task.state,
-        'current': 0,
-        'total': 1,
-        'status': 'Pending...'
-    }
-  elif task.state != 'FAILURE':
-    response = {
-        'state': task.state,
-        'current': task.info.get('current', 0),
-        'total': task.info.get('total', 1),
-        'status': task.info.get('status', '')
-    }
-    #print(task)
-  else:
-    # something went wrong in the background job
-    response = {
-        'state': task.state,
-        'current': 1,
-        'total': 1,
-        'status': str(task.info),  # this is the exception raised
-    }
-  return jsonify(response)
-
-@bp.route('/task/<task_id>')
-def task(task_id):
-  task = post_package_uptime_celery.AsyncResult(task_id)
-  print(task)
-  if task.state == 'SUCCESS':
-    return redirect(url_for('availability.packageuptime_result', task_id=task_id))
-  else:
-    return render_template('tasks/task.html', task_status_url = url_for('availability.taskstatus',task_id=task_id))
-
 
 
 
