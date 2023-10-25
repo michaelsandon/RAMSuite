@@ -1,29 +1,17 @@
 {
   "files": {
-    "app/availability/static/js/ram.js": [
+    "app/tests/ram_test.py": [
       {
-        "id": "d8c6cd01-ea71-4ec3-9596-94c2ab2e1736",
-        "line": 58,
-        "version": 1549,
-        "index": 1534
+        "id": "91aa8fd6-24aa-4783-8aa7-6a51d244e23f",
+        "line": 27,
+        "version": 1179,
+        "index": 789
       },
       {
-        "id": "db890a82-eca1-4ed9-9701-fe82f1138c85",
-        "line": 60,
-        "version": 1549,
-        "index": 1551
-      },
-      {
-        "id": "95421459-8352-442e-92e5-9caf676efa7c",
-        "line": 63,
-        "version": 1549,
-        "index": 1604
-      },
-      {
-        "id": "80308179-6839-48c5-babd-757a1f5b818f",
-        "line": 63,
-        "version": 1549,
-        "index": 1612
+        "id": "a8d2b5a3-803a-4775-a349-d2282729ddb2",
+        "line": 27,
+        "version": 1179,
+        "index": 789
       }
     ]
   }

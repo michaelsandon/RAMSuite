@@ -2,32 +2,33 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import app.static.helpers.global_formatting_functions as gff
+import app.static.helpers.global_reliability_helpers as grh
 from app.availability.static.helpers.ram_model_examples import new_rbd
 from app.availability.static.helpers.availability_functions import helper_sample_from_dist as sfd
+from datetime import datetime
+from multiprocessing import Pool
 
 
 Blocktype = ["Equipment","System - Series", "System - Parallel"]
 
 
 #function for compiling ram model
-def compile_ram_system(equipmentdf, subsystemdf, systemdf):
+def compile_system_hierarchy(equipmentdf, subsystemdf, systemdf):
   #clean up cols
-  
   compiled_system = systemdf
-  print("Subsystem" in compiled_system["type"])
   while any(compiled_system["type"] == "Subsystem"):
     target_node = min(compiled_system.id[compiled_system.type=="Subsystem"])
-    print(target_node)
     topdf = compiled_system[compiled_system.id < target_node].copy()
     bottomdf = compiled_system[compiled_system.id > target_node].copy()
     insertdf = subsystemdf[subsystemdf.subsystemid == compiled_system.refid.loc[compiled_system.id == target_node].values[0]].copy()
     insertdf["level"] = insertdf.level+compiled_system.level.loc[compiled_system.id == target_node].values[0]-1
-    insertdf.drop(['subsystemid'], axis=1)
     compiled_system = pd.concat([topdf,insertdf,bottomdf])
     compiled_system.reset_index(drop=True,inplace=True)
     compiled_system.id = compiled_system.index+1
 
+  compiled_system.drop(['subsystemid','created_at'], axis=1, inplace=True)
   return compiled_system
+
   
 #function to prepare an RBD for plotting given a compiled RBD system
 def prepare_rbd(config_file = new_rbd()):
@@ -184,12 +185,59 @@ def draw_rbd_image(rbd_size, rbd_config):
   return rbd_png
 
 
+#function to compile a RAM model
+def compile_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf):
+
+  #create system hierarchy
+  system_hierarchy = compile_system_hierarchy(equipmentdf, subsystemdf, systemdf)
+
+  #join failure modes to equipment
+  failuremodes = system_hierarchy.loc[system_hierarchy.type=="Equipment",["id","refid"]].merge(
+    failuremodedf,right_on='equipmentid', left_on='refid', validate="m:m", suffixes=('eq','oldfm'), how='inner')
+  failuremodes.reset_index(drop=True,inplace=True)
+  failuremodes["idnewfm"] = failuremodes.index+1
+
+  #join CBM responses with a subset df
+  subsetdf = failuremodes.loc[:,["idnewfm","idoldfm"]].copy()
+  cbmdf = subsetdf.join(cbmdf.set_index('target_fm'), on='idoldfm',validate='m:m',rsuffix='oldcbm',how='inner')
+  cbmdf.reset_index(drop=True,inplace=True)
+  cbmdf["idnewcbm"] = cbmdf.index+1
+  cbmdf.rename(columns={"id": "idoldcbm"}, inplace=True)
+  
+
+  #join FM autoresponse df
+  fmr = failuremoderesponsesdf.merge(failuremodes.loc[:,["idoldfm","idnewfm"]],left_on="failuremodeid",right_on="idoldfm")
+  fmr = fmr.merge(cbmdf.loc[:,["idnewfm","idoldcbm","idnewcbm"]], left_on=["idnewfm","cbmid"], right_on=["idnewfm","idoldcbm"])
+  fmr["id"] = fmr.index+1
+
+  #clean up dfs
+  eq_fm_map = failuremodes.loc[:,["ideq","idnewfm"]].rename(columns={"idnewfm":"fmid","ideq":"eqid"})
+  
+  failuremodes.rename(columns={"idnewfm":"id"}, inplace=True)
+  failuremodes.drop(["ideq","created_at","refid","idoldfm"], axis=1, inplace=True)
+
+  cbmdf.drop(["idoldfm","idoldcbm","created_at"], axis=1, inplace=True)
+  cbmdf.rename(columns={"idnewcbm":"id","idnewfm":"target_fm"}, inplace=True)
+
+  fmr.drop(["failuremodeid","cbmid","created_at","idoldfm","idoldcbm"], axis=1, inplace=True)
+  fmr.rename(columns = {"idnewfm":"failuremodeid","idnewcbm":"cbmid"}, inplace=True)
+
+  result = {"hierarchy":system_hierarchy,
+            "eq_fm_map":eq_fm_map,
+            "failuremodedf":failuremodes,
+            "inspectiondf":inspectiondf,
+            "tbmdf":tbmdf,
+            "cbmdf":cbmdf,
+            "failuremoderesponsesdf":fmr
+           }
+
+  return result
+
 
 #TODO add ability to link fms to run time. if equipment is not running, pause modes
 
+def run_rcm_simulation(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, failuremoderesponsesdf, componentlistdf, duration):
 
-def run_rcm_strategy(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, failuremoderesponsesdf, componentlistdf, duration):
-  print("preparing inputs")
   #setup params ################
   curr_eq_lifetime_start_time = 0
   current_sim_time = 0
@@ -206,7 +254,7 @@ def run_rcm_strategy(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, fai
 
   #####predict initial TBF and TTD for all failure modes####
 
-  print("estimating first lifes")
+
   column_names = ["FM_tag","TBF","TTD","Life_Start_Time", "Status", "VL_Start_Time", "TTF"]
   FM_curr_life_est = failuremodedf.copy()
   FM_curr_life_est[column_names]=None
@@ -252,11 +300,10 @@ def run_rcm_strategy(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, fai
 
   Inspection_log_all = pd.DataFrame(columns=["Time","Task","FM","Detection_Limit","Current_Condition","Findings","Action"])
 
-  print("Star of simulation")
+
   while(current_sim_time < duration):
 
     #start of loop
-    print("finding next event")
     next_event = find_next_event(
       #next_inspection_event = find_next_inspection_activity(inspection_sched),
       #next_TBM_maintenance_event = find_next_TBM_maintenance_activity(maintenance_sched_TBM),
@@ -414,7 +461,7 @@ def run_rcm_strategy(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, fai
     elif (next_event["Event_Type"] =="Inventory_backlog"):
 
       inventory_lifetimes.loc[len(inventory_lifetimes)] = inventory_lifetimes.tail(1).to_dict(orient="records")[0]
-      inventory_lifetimes[len(inventory_lifetimes)-1,"Time"] = next_sim_time
+      inventory_lifetimes.loc[len(inventory_lifetimes)-1,"Time"] = next_sim_time
 
       #stock if required
       inv_event = next_event["Details"]
@@ -471,7 +518,6 @@ def run_rcm_strategy(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, fai
   }
 
   return result
-
 
 
 #helper function to increment the lifetime dataframe
@@ -567,7 +613,7 @@ def find_next_RTS_maintenance_activity(maintenance_RTS_backlog):
     result = None
   else:
     result = {}
-    result["Details"] = maintenance_RTS_backlog.sort_values(by=["Due"],ascending=True).head(1).to_dict(orient='records')[0].copy()
+    result["Details"] = maintenance_RTS_backlog.sort_values(by=["Due"],ascending=True).head(1).to_dict(orient='records')[0]
     result["Event_Type"] = "Maintenance_RTS"
     result["Time"] = result["Details"]["Due"]
     
@@ -585,7 +631,6 @@ def find_next_Inv_Backlog_activity(inventory_backlog):
     result["Time"] = result["Details"]["estimatedDeliveryTime"]
 
   return(result)
-
 
 
 #helper function to determine next event
@@ -619,9 +664,6 @@ def find_next_event(dur, next_failure_event, next_inspection_event = None, next_
   return(result)
 
 
-
-
-
 #helper Perform Maintenance
 def perform_maintenance(maintenance_task_details, component_list_details, maintenance_time, maintenance_RTS_backlog, FM_curr_life_est, FM_lifetimes, inventory_lifetimes, inventorydf, inventory_backlog, ISDP_DF,duration):
 
@@ -633,7 +675,7 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
     for m in requirements.index:
       req_materialid = requirements.materialid[m]
       req_material_tag = "matl"+str(req_materialid)
-      req_q = requirements.qty[m]
+      req_q = requirements.loc[m,"qty"]#requirements.qty[m]
 
       tmp_qty = inventory_lifetimes[req_material_tag].iloc[-1]
 
@@ -647,7 +689,7 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
 
       inventory_lifetimes.loc[len(inventory_lifetimes)] = inventory_lifetimes.iloc[-1].copy()
       inventory_lifetimes["Time"].iloc[-1] = maintenance_time
-      inventory_lifetimes[len(inventory_lifetimes),req_material_tag] = new_tmp_qty
+      inventory_lifetimes.loc[len(inventory_lifetimes),req_material_tag] = new_tmp_qty
       #if min stock reached and was previously over place order
       matl_min = inventorydf.loc[inventorydf.matl_tag == req_material_tag]["min_lvl"].iloc[0]
       matl_max = inventorydf.loc[inventorydf.matl_tag == req_material_tag]["max_lvl"].iloc[0]
@@ -673,12 +715,12 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
 
 
       # use the required qty on backorder to update the "allocated amount to orders" of items in the order backlog
-      while(req_q > 0 and len(inventory_backlog[inventory_backlog.material == req_material_tag & inventory_backlog.allocated < inventory_backlog.qty])>0):
+      while((req_q > 0) & (len(inventory_backlog.loc[(inventory_backlog.material == req_material_tag) & (inventory_backlog.allocated < inventory_backlog.qty)])>0)):
         #created dt
-        target_id = inventory_backlog[inventory_backlog.material == req_material_tag & inventory_backlog.allocated < inventory_backlog.qty].index[0]  
+        target_id = inventory_backlog.loc[(inventory_backlog.material == req_material_tag) & (inventory_backlog.allocated < inventory_backlog.qty)].index[0]  
         tmpdelta = min(req_q,inventory_backlog.qty[target_id]-inventory_backlog.allocated[target_id])
         req_q = req_q - tmpdelta
-        inventory_backlog.Allocated[target_id] = inventory_backlog.allocated[target_id] + tmpdelta
+        inventory_backlog.loc[target_id,"allocated"] = inventory_backlog.loc[target_id,"allocated"] + tmpdelta
         mat_delay = max(inventory_backlog.estimatedDeliveryTime[target_id]-maintenance_time,mat_delay)
 
         #if this still doesn't satify all req materials debug
@@ -782,3 +824,100 @@ def perform_RTS(RTS_event, FM_curr_life_est, FM_lifetimes, RTS_time):
   
 
   return({"FM_curr_life_est": FM_curr_life_est, "FM_lifetimes": FM_lifetimes})
+
+
+
+#final function
+def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims):
+
+  start_timestamp = datetime.now()
+  #compile model and receive result
+  compiled_model = compile_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf,
+                                     inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf)
+
+  hierarchydf = compiled_model["hierarchy"]
+  eq_fm_map = compiled_model["eq_fm_map"]
+  failuremodedf = compiled_model["failuremodedf"]
+  inspectiondf = compiled_model["inspectiondf"]
+  tbmdf = compiled_model["tbmdf"]
+  cbmdf = compiled_model["cbmdf"]
+  failuremoderesponsesdf = compiled_model["failuremoderesponsesdf"]
+  compiled_timestamp = datetime.now()
+
+  details = []
+  for i in range(n_sims):
+    sim_details = run_rcm_simulation(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf,
+                                     failuremoderesponsesdf, componentlistdf, duration)
+
+    #add in result post processing potentially
+    details.append(sim_details)
+  simulated_timestamp = datetime.now()
+  
+  stats = []
+  for d in details:
+    #process result
+    stats.append(None)
+
+  processed_timestamp = datetime.now()
+  result = {}
+  result["times"] = {"Start":str(start_timestamp),
+                    "Model Compilation":str(compiled_timestamp - start_timestamp),
+                    "Model Simulation": str(simulated_timestamp - compiled_timestamp),
+                    "Results Processing":str(processed_timestamp - simulated_timestamp)}
+  result["details"] = details
+  result["stats"] = stats
+
+  return result
+    
+  
+
+#final function
+def run_ram_model_pool(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims):
+
+  start_timestamp = datetime.now()
+  #compile model and receive result
+  compiled_model = compile_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf,
+                                     inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf)
+
+  hierarchydf = compiled_model["hierarchy"]
+  eq_fm_map = compiled_model["eq_fm_map"]
+  failuremodedf = compiled_model["failuremodedf"]
+  inspectiondf = compiled_model["inspectiondf"]
+  tbmdf = compiled_model["tbmdf"]
+  cbmdf = compiled_model["cbmdf"]
+  failuremoderesponsesdf = compiled_model["failuremoderesponsesdf"]
+  compiled_timestamp = datetime.now()
+
+  details = []
+  #use pool
+  with Pool(processes=4, initializer=grh.helper_init_seed) as pool:
+    all_sims = [
+      pool.apply_async(run_rcm_simulation,
+                       [failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf,
+                         failuremoderesponsesdf, componentlistdf, duration])
+      for i in range(n_sims)
+    ]
+
+    for sim in all_sims:
+      sim_result = sim.get(timeout=None)
+      details.append(sim_result)
+  
+  simulated_timestamp = datetime.now()
+
+  stats = []
+
+  
+  for d in details:
+    #process result
+    stats.append(None)
+
+  processed_timestamp = datetime.now()
+  result = {}
+  result["times"] = {"Start":str(start_timestamp),
+                    "Model Compilation":str(compiled_timestamp - start_timestamp),
+                    "Model Simulation": str(simulated_timestamp - compiled_timestamp),
+                    "Results Processing":str(processed_timestamp - simulated_timestamp)}
+  result["details"] = details
+  result["stats"] = stats
+
+  return result

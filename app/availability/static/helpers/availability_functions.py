@@ -2,14 +2,9 @@ import reliability.Distributions as reldist
 import pandas as pd
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
-from numpy.random import randn, seed
 from functools import reduce
 import app.static.helpers.global_formatting_functions as gff
-
-
-def helper_init_seed():
-  seed()
-
+import app.static.helpers.global_reliability_helpers as grh
 
 def helper_sample_from_dist(dist_as_dict, n_samples=1):
 
@@ -105,7 +100,7 @@ def package_uptime_pool(tbe={
   result_list = []
 
   #use pool
-  with Pool(processes=4, initializer=helper_init_seed) as pool:
+  with Pool(processes=4, initializer=grh.helper_init_seed) as pool:
     all_sims = [
       pool.apply_async(_package_uptime, [tbe, dt, dur, id])
       for id in range(n_sims)
@@ -143,7 +138,7 @@ def _package_uptime_thread(tbe={
   if n_parallel == 1:
     result = _equipment_uptime(tbe=tbe, dt=dt, dur=dur, sim_id=sim_id)
   else:
-    with ThreadPool(n_parallel, initializer=helper_init_seed) as pool:
+    with ThreadPool(n_parallel, initializer=grh.helper_init_seed) as pool:
       all_sims = [
         pool.apply_async(_equipment_uptime, [tbe, dt, dur])
         for id in range(n_parallel)
@@ -198,7 +193,7 @@ def package_uptime_thread(tbe={
   result_list = []
 
   #use pool
-  with Pool(processes=2, initializer=helper_init_seed) as pool:
+  with Pool(processes=2, initializer=grh.helper_init_seed) as pool:
     #with ThreadPool(10, initializer=helper_init_seed) as pool:
     all_sims = [
       pool.apply_async(_package_uptime_thread,

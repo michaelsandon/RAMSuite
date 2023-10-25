@@ -2,13 +2,13 @@ from app.availability import bp
 import app.availability.static.helpers.availability_functions as av
 import app.availability.static.helpers.ram_functions as ram_funcs
 import app.availability.static.helpers.ram_db_functions as ram_db_funcs
-from app.models.ram import ram_model_index as rmi, ram_model_equipment as rme, ram_model_subsystem_index as rmsi, ram_model_subsystem_structure as rmss, ram_model_system_structure as rms
-from app.extensions import ramdb
-from sqlalchemy import select
-from flask import render_template, request, jsonify, url_for, redirect, make_response
-from celery import shared_task
-import pandas as pd
 import app.static.helpers.global_formatting_functions as gff
+
+from flask import render_template, request, jsonify, url_for, redirect
+from celery import shared_task
+
+from app.tasks.shared_tasks import celery_task_router
+
 
 @bp.route('/')
 def index():
@@ -21,18 +21,17 @@ def packageuptime():
 @bp.route('/packageuptime/result/<task_id>', methods=["GET", "POST"])
 def packageuptime_result(task_id):
   if request.method == "POST":
-    #print(request.form)
-    task = post_package_uptime_celery.apply_async(args = [request.form])
-    return redirect(url_for('availability.task', task_id=task.id))
+
     
-    #jsonify({}), 202, {'Location': url_for('availability.taskstatus',
-    #                                              task_id=task.id)}
-    #post_result = av.post_package_uptime(request=request)
-    #return render_template('availability/packageuptime_result.html',
-    #                       simulation_stats=post_result['stats'],
-    #                      simulation_ts = post_result['ts'])
+    #task = post_package_uptime_celery.apply_async(args = [request.form])
+    #return redirect(url_for('availability.task', task_id=task.id))
+    task = celery_task_router.apply_async(args = [request.form,"av-pu"])
+    return redirect(url_for('tasks.task', task_id=task.id))
+    
   else:
-    task = post_package_uptime_celery.AsyncResult(task_id)
+    
+    #task = post_package_uptime_celery.AsyncResult(task_id)
+    task = celery_task_router.AsyncResult(task_id)
     post_result = task.result
     #print(post_result)
     return render_template('availability/packageuptime_result.html',
@@ -81,7 +80,7 @@ def model_rbd(model_id,image = None):
   subsysdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemstructure"], modelid=model_id,format="df")
   sysdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["system"], modelid=model_id,format="df")
 
-  compiled_sys = ram_funcs.compile_ram_system(equipmentdf=eqdf,
+  compiled_sys = ram_funcs.compile_system_hierarchy(equipmentdf=eqdf,
                                              subsystemdf=subsysdf,
                                              systemdf=sysdf)
 
@@ -94,6 +93,8 @@ def model_rbd(model_id,image = None):
     response = gff.helper_format_df_as_std_html(rbd_file["config"])#compiled_sys)
   return response
   #return gff.helper_format_df_as_std_html(compiled_sys)
+
+
 
 @shared_task(bind=True, acks_late = True)
 def post_package_uptime_celery(self,request_form):
@@ -133,6 +134,7 @@ def taskstatus(task_id):
 @bp.route('/task/<task_id>')
 def task(task_id):
   task = post_package_uptime_celery.AsyncResult(task_id)
+  print(task)
   if task.state == 'SUCCESS':
     return redirect(url_for('availability.packageuptime_result', task_id=task_id))
   else:

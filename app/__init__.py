@@ -1,6 +1,6 @@
 from flask import Flask
 from config import Config
-from app.main.main_data import site_map
+from app.static.helpers.main_data import site_map
 from app.extensions import make_celery, ramdb
 from redis import Redis
 
@@ -35,13 +35,12 @@ def create_app(config_class=Config):
 
   from app.availability import bp as availability_bp
   app.register_blueprint(availability_bp, url_prefix='/availability')
+
+  from app.tasks import bp as task_bp
+  app.register_blueprint(task_bp)
   # main driver function
 
   return app, celery, redis, ramdb
 
-
-def create_app_2():
-  return None
-  
 
 
