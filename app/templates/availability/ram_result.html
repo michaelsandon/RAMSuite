@@ -8,7 +8,7 @@
   <h1>RAM Results</h1>
   
   <div class="accordion" id="accordionExample">
-    {% for acc_item in ["Event Log", "Lifetimes Timeseries","Inventory Timeseries","Statistics"] %}
+    {% for acc_item in ["Sim Performance","Event Log", "Lifetimes Timeseries","Inventory Timeseries","Statistics"] %}
     <div class="accordion-item">
       <h2 class="accordion-header" id="heading{{loop.index}}">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
@@ -18,19 +18,20 @@
       <div id="collapse{{loop.index}}" class="accordion-collapse collapse" aria-labelledby="heading{{loop.index}}" data-bs-parent="#accordionExample">
         <div class="accordion-body">
 
-          <!---
+
           {% if loop.index == 1 %}
 
           <div class = "m-2 h-100">
-            <h5 class="d-inline">Simulation Outcomes</h5>
-            <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
-            <div id="sampletablewrapper" class="table-responsive h-100">
-              {{simulation_ts|safe}}
+            <h5 class="d-inline">Execution Times</h5>
+            <div>
+              {{times|safe}}
             </div>
           </div>
 
+          {% endif %}
 
-          
+
+          <!---
           {% elif loop.index == 2 %}
 
           <div class = "m-2 h-100">

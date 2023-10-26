@@ -79,7 +79,7 @@ $('input[name="loadcreatetoggle"]').change(function(){
 $("#formloadmodel").on("submit",function( event ) {
   event.preventDefault();
   target_id = $("#rammodelselect")[0].value
-  requrl = "/availability/ram/model/"+target_id+"/equipment/html"
+  requrl = "/availability/ram/model/"+target_id+"/detail/equipment/html"
 
   load_progress_label.hidden = false
   load_progress_bar.hidden = false
@@ -96,7 +96,7 @@ $("#formloadmodel").on("submit",function( event ) {
   load_progress_label.innerText = "loading subsystems"
   load_progress_bar.value = 30
   
-  requrl = "/availability/ram/model/"+target_id+"/subsystems/html-comp"
+  requrl = "/availability/ram/model/"+target_id+"/subsystems/"
 
   fetch(requrl)
   .then((response) => response.text())
@@ -107,7 +107,7 @@ $("#formloadmodel").on("submit",function( event ) {
   load_progress_label.innerText = "loading system"
   load_progress_bar.value = 60
 
-  requrl = "/availability/ram/model/"+target_id+"/system/html"
+  requrl = "/availability/ram/model/"+target_id+"/detail/system/html"
   
   fetch(requrl)
   .then((response) => response.text())
@@ -115,13 +115,13 @@ $("#formloadmodel").on("submit",function( event ) {
     system_table.innerHTML = text
   });
 
-  requrl = "/availability/ram/model/"+target_id+"/index/"
+  requrl = "/availability/ram/model/"+target_id+"/detail/model/"
   
   fetch(requrl)
   .then((response) => response.json())
   .then((data) => {
-    loaded_model_id.innerText = data.id
-    loaded_model_title.innerText = data.title
+    loaded_model_id.innerText = data[0].id
+    loaded_model_title.innerText = data[0].title
   });
 
 
@@ -133,4 +133,14 @@ $("#formloadmodel").on("submit",function( event ) {
   
 
 
+});
+
+
+
+$("#run-ram").submit( function(eventObj) {
+    $("<input />").attr("type", "hidden")
+        .attr("name", "model_id")
+        .attr("value", Number(loaded_model_id.innerText))
+        .appendTo("#run-ram");
+    return true;
 });

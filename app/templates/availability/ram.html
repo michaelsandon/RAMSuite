@@ -102,10 +102,16 @@
   </div>
 
   <h2>Step3. Run Outputs</h2>
-  <button id= "load_ram_model" type="button" class="btn btn-primary">load RAM</button>
+  <form id = "run-ram" method = "POST" action = "{{url_for('availability.ram_result')}}">
+    <button id= "run_ram_model" type="submit" class="btn btn-primary">load RAM</button>
+  </form>
+
+  <form>
+    <button id= "generate_rbd" type="submit" class="btn btn-primary">Draw RBD</button>
+  </form>
   
-  <button id= "generate_rbd" type="button" class="btn btn-primary">Draw RBD</button>
-  </div>
+
+</div>
 
 {% endblock %}
 

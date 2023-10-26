@@ -21,16 +21,16 @@ def packageuptime():
 @bp.route('/packageuptime/result/<task_id>', methods=["GET"])
 def packageuptime_result(task_id=None):
   if request.method == "POST":
-    task = celery_task_router.apply_async(args = [request.form,"av-pu",'availability.packageuptime_result'])
+    task = celery_task_router.apply_async(args = [request.form,"av-pu", 'availability.packageuptime_result'])
     return redirect(url_for('tasks.task', task_id=task.id))
     
   else:
     
     task = celery_task_router.AsyncResult(task_id)
-    post_result = task.result
+    task_result = task.result
     return render_template('availability/packageuptime_result.html',
-                           simulation_stats=post_result['stats'],
-                          simulation_ts = post_result['ts'])
+                           simulation_stats=task_result['stats'],
+                          simulation_ts = task_result['ts'])
 
 
 @bp.route('/ram/')
@@ -38,9 +38,17 @@ def ram():
   models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
   return render_template('availability/ram.html', models = models)
 
-@bp.route('/ram/result/', methods=["POST","GET"])
-def ram_result():
-  return render_template('availability/ram_result.html')
+@bp.route('/ram/result/', methods=["POST"])
+@bp.route('/ram/result/<task_id>', methods=["GET"])
+def ram_result(task_id = None):
+  if request.method == "POST":
+    task = celery_task_router.apply_async(args = [request.form,"av-ram",'availability.ram_result'])
+    return redirect(url_for('tasks.task', task_id=task.id))
+
+  else:
+    task = celery_task_router.AsyncResult(task_id)
+    task_result = task.result
+    return render_template('availability/ram_result.html', times = task_result["times"])
   
 @bp.route('/ram/model/<model_id>/all')
 def api_ram_model_all(model_id):
@@ -58,8 +66,8 @@ def api_ram_model_detail(model_id, table, datatype = None):
 @bp.route('/ram/model/<model_id>/subsystems/')
 def content_ram_model_subsystems(model_id, datatype = None):
 
-  ssindex = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemindex"], modelid=model_id,format=datatype)
-  ssstruc = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemstructure"], modelid=model_id,format=datatype)
+  ssindex = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemindex"], modelid=model_id,format="df")
+  ssstruc = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemstructure"], modelid=model_id,format="df")
 
   if len(ssstruc)>0:
     response = gff.helper_format_parent_child_dfs_as_html(dfparent = ssindex, dfchild=ssstruc, parentidcol="id",childparentidcol="subsystemid")

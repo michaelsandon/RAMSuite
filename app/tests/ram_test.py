@@ -5,7 +5,7 @@ from app import create_app
 
 Flask_app, celery, redis, ramdb = create_app()
 
-testid = 4
+testid = 2
 with Flask_app.app_context():
   import app.availability.static.helpers.ram_db_functions as ramdbfuncs
 

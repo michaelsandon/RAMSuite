@@ -411,6 +411,7 @@ def uptime_statistics_long(uptime_signals, updates = None):
 
 
 
+
   
 def package_uptime_parallel_process(self, request_form):
   result = {}
@@ -464,7 +465,7 @@ def package_uptime_parallel_process(self, request_form):
 
 
 
-def package_uptime_celery(self, request_form):
+def package_uptime_celery(self, request_form, meta):
   result = {}
 
   request_data = gff.helper_format_request(request_form)#request.form)
@@ -484,13 +485,10 @@ def package_uptime_celery(self, request_form):
     'par3': request_data['dt_param3']
   }
 
-  meta = {'current': 0,
-          'total': request_data['n_sims'],
-          'status': "Running Simulations"
-          }
+  meta['total'] = request_data['n_sims']
+  meta['status'] = "Running Simulations"
   
-  self.update_state(state='PROGRESS',
-                    meta=meta)
+  self.update_state(state='PROGRESS', meta=meta)
 
   simulation_ts = package_uptime_long(tbe=tbe,
                                       dt=dt,
@@ -498,34 +496,27 @@ def package_uptime_celery(self, request_form):
                                       n_req=request_data['n_req'],
                                       dur=request_data['dur'],
                                       n_sims=request_data['n_sims'],
-                                      updates = [self,meta])
+                                      updates = [self,meta.copy()])
   
 
-  meta = {'current': 0,
-          'total': request_data['n_sims'],
-          'status': "Processing Results"
-          }
-
-  self.update_state(state='PROGRESS',
-                    meta= meta)
   
-  simulation_stats = uptime_statistics_long(simulation_ts, updates = [self,meta])
+  meta['status'] = "Processing Results"
+  self.update_state(state='PROGRESS', meta= meta)
+  
+  simulation_stats = uptime_statistics_long(simulation_ts, updates = [self,meta.copy()])
 
-  self.update_state(state='PROGRESS',
-                    meta= {'current': 0,
-                            'total': 2,
-                            'status': "Formatting Results"
-                            })
+
+  meta['status'] = "Formatting Results"
+  meta["total"] = 2
+  self.update_state(state='PROGRESS', meta= meta)
   
   result['ts'] = gff.helper_format_df_as_std_html(simulation_ts.head(100))
   simulation_ts.reset_index(inplace=True)
   result['ts_df'] = simulation_ts.to_json()
 
-  self.update_state(state='PROGRESS',
-                  meta= {'current': 1,
-                          'total': 2,
-                          'status': "Formatting Results"
-                          })
+  meta["current"] = 1
+  self.update_state(state='PROGRESS', meta= meta)
+  
   result['stats'] = gff.helper_format_df_as_std_html(simulation_stats)
 
   return result

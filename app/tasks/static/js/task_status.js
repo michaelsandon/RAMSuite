@@ -9,8 +9,19 @@ function update_progress(status_url, nanobar, status_div) {
 
         status_div.children().eq(1).text(percent + '%');
         status_div.children().eq(2).text(data['status']);
+
+        if (data['state'] == 'SUCCESS'){
+          location.reload();
+        } else if (data['state'] == 'FAILURE') {
+          $(status_div.childNodes[3]).text('Result: ' + data['state']);
+        } else {
+          setTimeout(function() {
+              update_progress(status_url, nanobar, status_div);
+          }, 5000);
+        }
+          
       
-        if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
+        /*if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
             if (data['state'] == 'SUCCESS') {
                 // show result
                 location.reload();;
@@ -25,7 +36,7 @@ function update_progress(status_url, nanobar, status_div) {
             setTimeout(function() {
                 update_progress(status_url, nanobar, status_div);
             }, 5000);
-        }
+        }*/
     });
 }
 

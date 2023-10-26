@@ -7,6 +7,7 @@ from app.availability.static.helpers.ram_model_examples import new_rbd
 from app.availability.static.helpers.availability_functions import helper_sample_from_dist as sfd
 from datetime import datetime
 from multiprocessing import Pool
+from app.availability.static.helpers import ram_db_functions
 
 
 Blocktype = ["Equipment","System - Series", "System - Parallel"]
@@ -827,14 +828,21 @@ def perform_RTS(RTS_event, FM_curr_life_est, FM_lifetimes, RTS_time):
 
 
 
-#final function
-def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims):
+#final function option 1
+def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims,updates = None):
 
   start_timestamp = datetime.now()
+  #update state
+  if updates is not None:
+    task_obj = updates[0]
+    meta = updates[1]
+    meta["status"]="Compiling Model"
+    task_obj.update_state(meta=meta)
+
   #compile model and receive result
   compiled_model = compile_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf,
                                      inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf)
-
+    
   hierarchydf = compiled_model["hierarchy"]
   eq_fm_map = compiled_model["eq_fm_map"]
   failuremodedf = compiled_model["failuremodedf"]
@@ -844,6 +852,12 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   failuremoderesponsesdf = compiled_model["failuremoderesponsesdf"]
   compiled_timestamp = datetime.now()
 
+  #update state
+  if updates is not None:
+    meta["current"]=2
+    task_obj.update_state(meta=meta)
+    meta.update({"status":"Simulating","total":n_sims})
+
   details = []
   for i in range(n_sims):
     sim_details = run_rcm_simulation(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf,
@@ -851,6 +865,11 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
 
     #add in result post processing potentially
     details.append(sim_details)
+    if updates is not None:
+      meta["current"]=i
+      task_obj.update_state(meta=meta)
+
+  #timestamp end of simulation
   simulated_timestamp = datetime.now()
   
   stats = []
@@ -871,7 +890,7 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
     
   
 
-#final function
+#final function option 2
 def run_ram_model_pool(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims):
 
   start_timestamp = datetime.now()
@@ -921,3 +940,48 @@ def run_ram_model_pool(equipmentdf, subsystemdf, systemdf, failuremodedf, inspec
   result["stats"] = stats
 
   return result
+
+
+#final function option 3
+def run_ram_model_celery(self, request_form, meta):
+  #retrieve the model from the database
+  meta["status"] = "Loading Model & Compiling Model"
+  meta["total"] = 2
+  self.update_state(meta = meta)
+  print(request_form)
+  model = ram_db_functions.helper_query_ram_model_db_by_model_id(modelid=request_form['model_id'],format="df")
+  equipmentdf = model["equipment"]
+  subsystemdf=model["subsystemstructure"]
+  systemdf=model["system"]
+  failuremodedf=model["failuremodes"]
+  inspectiondf=None
+  tbmdf = None
+  cbmdf = model["conditionbasedmaintenance"]
+  failuremoderesponsesdf=model["equipmentfailuremoderesponses"]
+  inventorydf = model["inventory"]
+  componentlistdf = model["componentlistdetails"]
+  duration = 300000
+
+  print("equipmentdf")
+  print(equipmentdf)
+  meta["current"] = 1
+  self.update_state(meta = meta)
+
+  model_result = run_ram_model(equipmentdf,
+                               subsystemdf,
+                               systemdf,
+                               failuremodedf,
+                               inspectiondf,
+                               tbmdf,
+                               cbmdf,
+                               failuremoderesponsesdf,
+                               inventorydf,
+                               componentlistdf,
+                               duration,
+                               n_sims=10,
+                               updates = [self,meta])
+
+  result = {}
+  result["times"] = model_result["times"]
+  return result
+  
