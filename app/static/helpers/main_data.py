@@ -1,50 +1,54 @@
-site_map = [{
-  'Name': "Home",
-  'Route': "main.index",
-  'Desc': "Home"
-}, {
-  'Name':
-  'Survival',
-  'Route':
-  "survival.index",
-  'Desc':
-  'lifetime anaylsis modules to determine failure patterns',
-  'Children': [{
-    'Name': "Sampling",
-    'Route': "survival.distsample",
-    'Desc': "main.index"
-  }, {
-    'Name': "Survival Fit",
-    'Route': "survival.survivalfit",
-    'Desc': "main.index"
-  }]
-}, {
-  'Name':
-  'Uptime',
-  'Desc':
-  'RAM simulation type model to determine stream uptime, throughput etc.',
-  'Route':
-  "availability.index",
-  'Children': [{
-    'Name': "Single Package Uptime",
-    'Route': "availability.packageuptime",
-    'Desc': "availability.packageuptime"
-  }, {
-    'Name': "RAM Modeller",
-    'Route': "availability.ram",
-    'Desc': "availability.ram"
-  }
-              ]
-}, {
-  'Name': 'Cost',
-  'Desc': 'Lifecycle cost evaluation module',
-  'Route': "main.index"
-}, {
-  'Name': 'Maintenance',
-  'Desc': "RCM, Strategy tester",
-  'Route': "main.index"
-}, {
-  'Name': 'Risk',
-  'Desc': 'Tba',
-  'Route': "main.index"
-}]
+def create_map_branch(branchname,desc, route = None):
+  if route is None:
+    route = branchname + '.index'
+  branch = {'Name':branchname,
+           'Route':route,
+           'Desc':desc,
+           'Children':[]}
+  return branch
+
+def create_map_branch_child(name,desc,route,branch = None):
+  child = {'Name':name,'Route':route,'Desc': desc}
+  if branch is not None:
+    branch["Children"].append(child)
+    result = branch
+  else:
+    result = child
+  return result
+    
+    
+def render_site_map():
+  map = []
+  home = create_map_branch("Home","Home page",route='main.index')
+  map.append(home)
+
+  survival = create_map_branch("Survival","Lifetime anaylsis modules to determine failure patterns",'survival.index')
+  survival = create_map_branch_child("Sampling","Conduct random sampling from a distribution", 'survival.distsample',survival)
+  survival = create_map_branch_child("Survival Fit","Use observed failure data to fit a failure distribution", 'survival.survivalfit',survival)
+  map.append(survival)
+
+  uptime = create_map_branch('Uptime','RAM simulation type model to determine stream uptime, throughput etc.',"availability.index")
+  uptime = create_map_branch_child('Simple Parallel Package', 'Modeller to enable uptime to be estimated for a M out of N parallel scenario','availability.packageuptime',uptime)
+  uptime = create_map_branch_child('RAM Modeller', 'Modeller to enable uptime to be estimated for a complex system or site','availability.ram',uptime)
+  map.append(uptime)
+
+  cost = create_map_branch("Cost","Lifecycle Cost evaluation module",'main.index')
+  map.append(cost)
+
+  maintenance = create_map_branch("Maintenance", "Reliability Centred Maintenance, Strategy Tester",'main.index')
+  map.append(maintenance)
+
+
+  risk = create_map_branch("Risk", "Risk module supported safety assessments, safety availability and SIL levels, Risk target decomposer", 'main.index')
+  map.append(risk)
+
+  examples = create_map_branch("Examples","Worked examples to demonstrate how to apply the toolkit", 'examples.index')
+  examples = create_map_branch_child("Survival Examples", "Examples using the survival toolkit",'examples.survival', examples)
+  map.append(examples)
+  
+  return map
+  
+  
+
+site_map = render_site_map()
+

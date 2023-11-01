@@ -36,8 +36,11 @@ def create_app(config_class=Config):
   from app.availability import bp as availability_bp
   app.register_blueprint(availability_bp, url_prefix='/availability')
 
+  from app.examples import bp as example_bp
+  app.register_blueprint(example_bp, url_prefix='/examples')
+
   from app.tasks import bp as task_bp
-  app.register_blueprint(task_bp)
+  app.register_blueprint(task_bp, url_prefix='/tasks')
   # main driver function
 
   return app, celery, redis, ramdb

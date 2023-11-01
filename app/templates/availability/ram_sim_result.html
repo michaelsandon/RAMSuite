@@ -1,0 +1,74 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+{% endblock %}
+
+{% block content %}
+<div class="content-container h-100">
+  <h1>Simulation Results</h1>
+  <div><b>Task Id:</b>{{task_id}}</div>
+  <div><b>Sim Id:</b>{{sim_id}}</div>
+  
+  <div class="accordion" id="accordionExample">
+    {% for acc_item in ["Summary Performance", "Equipment Lifetimes","Inventory Lifetimes","Equipment Criticality","Failure Mode Criticality","Maintenance Details","Inspection Details","Event Logs"] %}
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="heading{{loop.index}}">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
+          {{acc_item}}
+        </button>
+      </h2>
+      <div id="collapse{{loop.index}}" class="accordion-collapse collapse" aria-labelledby="heading{{loop.index}}" data-bs-parent="#accordionExample">
+        <div class="accordion-body">
+
+
+          {% if loop.index == 1 %}
+
+          <div class = "m-2 h-100">
+            <h5 class="d-inline">Execution Times</h5>
+            <div>
+            </div>
+          </div>
+
+          {% elif loop.index == 2 %}
+
+          <div class = "m-2 h-100">
+            <h5 class="d-inline">Lifetimes as timeseries</h5>
+            <div>
+              {{uptime_plt|safe}}
+            </div>
+          </div>
+
+          {% elif loop.index == 3 %}
+
+          <div class="m-2">
+            <h5 class="d-inline">Inventory stock levels as timesseries</h5>
+            <div>
+              {{inv_plt|safe}}
+            </div>
+
+          </div>
+          {% elif loop.index == 8 %}
+
+          <div class="m-2">
+            <h5 class="d-inline">logs</h5>
+            <div>
+              {{logs|safe}}
+            </div>
+
+          </div>
+
+          {% endif %}
+          
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{super()}}
+{% endblock %}

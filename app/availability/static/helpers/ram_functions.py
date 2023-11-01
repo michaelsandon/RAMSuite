@@ -448,6 +448,7 @@ def run_rcm_simulation(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, f
                                          FM_curr_life_est = FM_curr_life_est.copy(),
                                          next_sim_time = next_sim_time)
     elif (next_event["Event_Type"] == "Fail"):
+      
       FM_curr_life_est.loc[FM_curr_life_est.FM_tag == next_event["Details"]["FM_tag"],"Status"] = "Fail"
       FM_lifetimes = increment_lifetimes(FM_lifetimes = FM_lifetimes.copy(),
                                           FM_curr_life_est = FM_curr_life_est.copy(),
@@ -463,14 +464,17 @@ def run_rcm_simulation(failuremodedf, inspectiondf, tbmdf, cbmdf, inventorydf, f
 
       inventory_lifetimes.loc[len(inventory_lifetimes)] = inventory_lifetimes.tail(1).to_dict(orient="records")[0]
       inventory_lifetimes.loc[len(inventory_lifetimes)-1,"Time"] = next_sim_time
+      inventory_lifetimes.loc[len(inventory_lifetimes)] = inventory_lifetimes.tail(1).to_dict(orient="records")[0]
 
       #stock if required
       inv_event = next_event["Details"]
       if(inv_event["qty"] > inv_event["allocated"]):
-        inventory_lifetimes[len(inventory_lifetimes)-1,inv_event["material"]] = inventory_lifetimes[inv_event["material"]].iloc[-1] + (inv_event["qty"] - inv_event["allocated"])
+        inventory_lifetimes.loc[len(inventory_lifetimes)-1,inv_event["material"]] = inventory_lifetimes[inv_event["material"]].iloc[-1] + (inv_event["qty"] - inv_event["allocated"])
 
       #remove row from inv backlog
+      #upgrade this process to an order ID approach
       inventory_backlog.drop(index = inventory_backlog.sort_values(by=["estimatedDeliveryTime"],ascending=True).head(1).index, inplace=True)
+      inventory_backlog.reset_index(drop=True,inplace=True)
 
 
     elif (next_event["Event_Type"] == "ISDP"):
@@ -690,7 +694,8 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
 
       inventory_lifetimes.loc[len(inventory_lifetimes)] = inventory_lifetimes.iloc[-1].copy()
       inventory_lifetimes["Time"].iloc[-1] = maintenance_time
-      inventory_lifetimes.loc[len(inventory_lifetimes),req_material_tag] = new_tmp_qty
+      inventory_lifetimes.loc[len(inventory_lifetimes)] = inventory_lifetimes.iloc[-1].copy()
+      inventory_lifetimes.loc[len(inventory_lifetimes)-1,req_material_tag] = new_tmp_qty
       #if min stock reached and was previously over place order
       matl_min = inventorydf.loc[inventorydf.matl_tag == req_material_tag]["min_lvl"].iloc[0]
       matl_max = inventorydf.loc[inventorydf.matl_tag == req_material_tag]["max_lvl"].iloc[0]
@@ -698,7 +703,7 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
 
       if((new_tmp_qty <= matl_min) & (tmp_qty > matl_min)):
         #order the deficit to meet the max
-        new_order = {"Created":maintenance_time,
+        new_order = {"created":maintenance_time,
                      "estimatedDeliveryTime":maintenance_time+inventorydf.loc[inventorydf.matl_tag == req_material_tag]["leadtime"].iloc[0],
                      "material":req_material_tag,
                      "qty":matl_max-new_tmp_qty,
@@ -707,13 +712,12 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
   
       elif(tmp_qty <= matl_min):
         #order amount that will be used
-        new_order = {"Created":maintenance_time,
+        new_order = {"created":maintenance_time,
                      "estimatedDeliveryTime":maintenance_time+inventorydf.loc[inventorydf.matl_tag == req_material_tag]["leadtime"].iloc[0],
                      "material":req_material_tag,
                      "qty":requirements.qty[m], ###not sure about this
                      "allocated":0}
         inventory_backlog.loc[len(inventory_backlog)] = new_order
-
 
       # use the required qty on backorder to update the "allocated amount to orders" of items in the order backlog
       while((req_q > 0) & (len(inventory_backlog.loc[(inventory_backlog.material == req_material_tag) & (inventory_backlog.allocated < inventory_backlog.qty)])>0)):
@@ -774,6 +778,8 @@ def perform_maintenance(maintenance_task_details, component_list_details, mainte
           "inventory_backlog": inventory_backlog})
 
 
+
+
 #helper function for Performing RTS
 def perform_RTS(RTS_event, FM_curr_life_est, FM_lifetimes, RTS_time):
   task_detail = RTS_event["Ref_task"]
@@ -828,16 +834,108 @@ def perform_RTS(RTS_event, FM_curr_life_est, FM_lifetimes, RTS_time):
 
 
 
+
+
+def eval_eq_lifetimes(FM_Lifetimes, eq_fm_map,hierarchy):
+
+  hierarchy["parent_id"] = hierarchy.apply(lambda x: 0  if(x["level"] ==1) else max(hierarchy.id[(hierarchy.id < x["id"]) & (hierarchy.level == (x["level"]-1))]), axis = 1)
+
+  eqblocks = hierarchy.loc[hierarchy.type == 'Equipment',"id"].to_list()
+  for eqid in eqblocks:
+    if len(eq_fm_map.loc[eq_fm_map.eqid==eqid])==0:
+      FM_Lifetimes["eq"+str(eqid)] = 1
+    else:
+      fmids = eq_fm_map.loc[eq_fm_map.eqid==eqid,"fmid"].to_list()
+      fmtags = ["fm"+str(fmid) for fmid in fmids]
+      FM_Lifetimes["eq"+str(eqid)] = FM_Lifetimes.apply(lambda x:min(x[fmtags]), axis=1)
+    
+  for i in range(max(hierarchy.level),0,-1):
+    sysblocks = hierarchy.loc[(hierarchy.level==i)&(hierarchy.type != "Equipment"),"id"].to_list()
+    for blockid in sysblocks:
+      childids = hierarchy.loc[hierarchy.parent_id==blockid,"id"].to_list()
+      childtags = ["eq"+str(id) for id in childids]
+      blocktype = hierarchy.loc[hierarchy.id==blockid,"type"].iloc[0]
+      if blocktype == "System - Series":
+        FM_Lifetimes["eq"+str(blockid)] = FM_Lifetimes.apply(lambda x:min(x[childtags]), axis=1)
+      else:
+        m = hierarchy.loc[hierarchy.id==blockid,"m"].iloc[0]
+        n = hierarchy.loc[hierarchy.id==blockid,"n"].iloc[0]
+        if pd.isna(m):
+          m = len(childids)
+
+        FM_Lifetimes["eq"+str(blockid)] = FM_Lifetimes.apply(lambda x:1 if sum(x[childtags]==1)>=m else 0, axis=1)
+
+  return FM_Lifetimes
+      
+        
+def eval_criticalities(FM_Lifetimes, eq_fm_map, hierarchy, reference_av, sim_id):
+  columns = FM_Lifetimes.columns.to_list()
+  columns.remove("Time")
+  result = pd.DataFrame(columns = columns)
+  result.loc[len(result)] = 0
+
+  hierarchy["parent_id"] = hierarchy.apply(lambda x: 0  if(x["level"] ==1) else max(hierarchy.id[(hierarchy.id < x["id"]) & (hierarchy.level == (x["level"]-1))]), axis = 1)
+    
+
+  for block in columns:
+    lifetimes = FM_Lifetimes.copy()
+    lifetimes.loc[:,block] = 1
+
+    curr_block = block
+
+    if block[0:2] == "fm":
+      parent_id = eq_fm_map.loc[eq_fm_map.fmid == int(curr_block[2:]),"eqid"].iloc[0]
+    else:
+      parent_id = hierarchy.loc[hierarchy.id == int(curr_block[2:]),"parent_id"].iloc[0]
+    
+    while parent_id != 0:
+      block_to_eval = parent_id
+      blocktype = hierarchy.loc[hierarchy.id==block_to_eval,"type"].iloc[0]
+      if blocktype == "Equipment":
+        if len(eq_fm_map.loc[eq_fm_map.eqid==block_to_eval])==0:
+          lifetimes["eq"+str(block_to_eval)] = 1
+        else:
+          fmids = eq_fm_map.loc[eq_fm_map.eqid==block_to_eval,"fmid"].to_list()
+          fmtags = ["fm"+str(fmid) for fmid in fmids]
+          lifetimes["eq"+str(block_to_eval)] = lifetimes.apply(lambda x:min(x[fmtags]), axis=1)
+      else:
+        childids = hierarchy.loc[hierarchy.parent_id==block_to_eval,"id"].to_list()
+        childtags = ["eq"+str(id) for id in childids]
+        if blocktype == "System - Series":
+          lifetimes["eq"+str(block_to_eval)] = lifetimes.apply(lambda x:min(x[childtags]), axis=1)
+        else:
+          m = hierarchy.loc[hierarchy.id==block_to_eval,"m"].iloc[0]
+          n = hierarchy.loc[hierarchy.id==block_to_eval,"n"].iloc[0]
+          if pd.isna(m):
+            m = len(childids)
+          lifetimes["eq"+str(block_to_eval)] = lifetimes.apply(lambda x:1 if sum(x[childtags]==1)>=m else 0, axis=1)
+      parent_id = hierarchy.loc[hierarchy.id == block_to_eval,"parent_id"].iloc[0]
+
+    #perform integration
+    new_p_p = grh.process_uptime_signals(lifetimes.loc[:,["Time","eq1"]].copy()).loc[0,"uptime_%"]
+    delta_p_p = new_p_p-reference_av
+    if reference_av == 1:
+      crit = 0
+    else:
+      crit = (delta_p_p)/(1 - reference_av)
+
+    result.loc[0,block] = crit
+
+  if sim_id is not None:
+    result["sim_id"] = sim_id
+
+  return result
+    
+        
+        
+    
+    
+
 #final function option 1
 def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims,updates = None):
 
   start_timestamp = datetime.now()
-  #update state
-  if updates is not None:
-    task_obj = updates[0]
-    meta = updates[1]
-    meta["status"]="Compiling Model"
-    task_obj.update_state(meta=meta)
+
 
   #compile model and receive result
   compiled_model = compile_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf,
@@ -854,9 +952,12 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
 
   #update state
   if updates is not None:
+    task_obj = updates[0]
+    meta = updates[1]
     meta["current"]=2
     task_obj.update_state(meta=meta)
-    meta.update({"status":"Simulating","total":n_sims})
+    meta.update({"status":"Simulating","total":n_sims, "current":0})
+    task_obj.update_state(meta=meta)
 
   details = []
   for i in range(n_sims):
@@ -871,13 +972,75 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
 
   #timestamp end of simulation
   simulated_timestamp = datetime.now()
-  
-  stats = []
-  for d in details:
-    #process result
-    stats.append(None)
 
+  #update state
+  if updates is not None:
+    meta.update({"status":"Post Processing Results","total":n_sims, "current":0})
+
+  #process results
+  for i in range(len(details)):
+    sim_details = details[i]
+
+    #manage lifetimes
+    lifetimes = sim_details["FM_lifetimes"].copy()
+    lifetimes = eval_eq_lifetimes(FM_Lifetimes = lifetimes, eq_fm_map= eq_fm_map.copy(), hierarchy = hierarchydf.copy())
+    details[i]["FM_lifetimes"] = lifetimes.copy()
+    
+    if updates is not None:
+      meta["current"]=i
+      task_obj.update_state(meta=meta)
+
+    """
+    "FM_lifetimes": FM_lifetimes,
+    "Event_log_all": Event_log_all,
+    "Inspection_log_all": Inspection_log_all,
+    "inventory_lifetimes": inventory_lifetimes,
+    "inv_details": None #inv_details
+    """
+  
+  stats = {"Sys_Av":[],
+          "Sys_Av_Stats":None,
+          "Inv_Av":[],
+          "Inv_Av_Stats":[],
+          "Eq_Crit":[],
+          "Eq_Crit_Stats":None}
+
+  #update state
+  if updates is not None:
+    meta.update({"status":"Evaluating stats","total":n_sims, "current":0})
+    
+  for i in range(len(details)):
+    #process results
+    #calculate the mean production uptime for each sim
+    stats['Sys_Av'].append(grh.process_uptime_signals(details[i]["FM_lifetimes"].loc[:,["Time","eq1"]].copy(),signaltype="eq",sim_id=i+1).drop(columns=["signalid"]))
+
+    #calculate the mean inventory value for each sim 
+    stats['Inv_Av'].append(grh.process_uptime_signals(details[i]["inventory_lifetimes"].copy(),signaltype="matl",sim_id=i+1))
+
+    #calculate the criticality of each node for each sim
+    stats["Eq_Crit"].append(eval_criticalities(FM_Lifetimes = details[i]["FM_lifetimes"].copy(), eq_fm_map = eq_fm_map.copy(), hierarchy = hierarchydf.copy(), reference_av = stats['Sys_Av'][i].loc[0,"uptime_%"], sim_id = i))
+    
+    if updates is not None:
+      meta["current"]=i
+      task_obj.update_state(meta=meta)
+
+
+  stats["Sys_Av"] = pd.concat(stats["Sys_Av"], ignore_index=True)
+  stats["Sys_Av_Stats"] = stats["Sys_Av"].describe().drop(['count'], axis = 0)
+  stats["Inv_Av"] = pd.concat(stats["Inv_Av"], ignore_index=True)
+  for matl in stats["Inv_Av"]["matl"].unique():
+    stat = stats["Inv_Av"].loc[stats["Inv_Av"]["matl"]==matl,:].describe().drop(['count'], axis = 0)
+    stat["matl"] = matl
+    stat.reset_index(inplace=True)
+    stats["Inv_Av_Stats"].append(stat)
+  stats["Inv_Av_Stats"] = pd.concat(stats["Inv_Av_Stats"], ignore_index=True)
+  stats["Eq_Crit"] = pd.concat(stats["Eq_Crit"], ignore_index=True)
+  stats["Eq_Crit_Stats"] = stats["Eq_Crit"].drop(["sim_id"], axis=1).describe().transpose().drop(["count"], axis=1)
+  stats["Eq_Crit"] = stats["Eq_Crit"].transpose()
+  
   processed_timestamp = datetime.now()
+
+  
   result = {}
   result["times"] = {"Start":str(start_timestamp),
                     "Model Compilation":str(compiled_timestamp - start_timestamp),
@@ -888,7 +1051,7 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
 
   return result
     
-  
+ 
 
 #final function option 2
 def run_ram_model_pool(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiondf, tbmdf, cbmdf, failuremoderesponsesdf, inventorydf, componentlistdf, duration,n_sims):
@@ -942,13 +1105,15 @@ def run_ram_model_pool(equipmentdf, subsystemdf, systemdf, failuremodedf, inspec
   return result
 
 
+
+
 #final function option 3
 def run_ram_model_celery(self, request_form, meta):
   #retrieve the model from the database
   meta["status"] = "Loading Model & Compiling Model"
   meta["total"] = 2
+  meta["current"] = 0
   self.update_state(meta = meta)
-  print(request_form)
   model = ram_db_functions.helper_query_ram_model_db_by_model_id(modelid=request_form['model_id'],format="df")
   equipmentdf = model["equipment"]
   subsystemdf=model["subsystemstructure"]
@@ -961,9 +1126,8 @@ def run_ram_model_celery(self, request_form, meta):
   inventorydf = model["inventory"]
   componentlistdf = model["componentlistdetails"]
   duration = 300000
+  n_sims = 10
 
-  print("equipmentdf")
-  print(equipmentdf)
   meta["current"] = 1
   self.update_state(meta = meta)
 
@@ -978,10 +1142,33 @@ def run_ram_model_celery(self, request_form, meta):
                                inventorydf,
                                componentlistdf,
                                duration,
-                               n_sims=10,
+                               n_sims,
                                updates = [self,meta])
 
+  #convert to json serialisable for celery task passing
+  for d in model_result["details"]:
+    for k, v in d.items():
+      try:
+        d[k] = v.to_json()
+      except:
+        d[k] = v
+        
+
   result = {}
-  result["times"] = model_result["times"]
+  result["times"] = gff.helper_dict_to_std_html(model_result["times"])
+  result["av"] = gff.helper_format_df_as_std_html(model_result["stats"]["Sys_Av"])
+  result["inv"] = gff.helper_format_df_as_std_html(model_result["stats"]["Inv_Av"])
+  result["av_stats"] = gff.helper_format_df_as_std_html(model_result["stats"]["Sys_Av_Stats"])
+  result["inv_stats"] = gff.helper_format_df_as_std_html(model_result["stats"]["Inv_Av_Stats"])
+  result["eq_crit"] = gff.helper_format_df_as_std_html(model_result["stats"]["Eq_Crit"])
+  result["eq_crit_stats"] = gff.helper_format_df_as_std_html(model_result["stats"]["Eq_Crit_Stats"])
+  result["n_sims"] = n_sims
+  result["details"] = model_result["details"]
   return result
+
+
+
+#helper for returning results from a single ram model run
+def return_model_results_by_sim_id():
+  return None
   

@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from io import BytesIO
 import base64
 import matplotlib.pyplot as plt
+import markdown
+from flask import url_for
 
 
 def helper_formdata_to_df(form_data: dict):
@@ -27,6 +29,11 @@ def helper_series_to_html(pd_series):
   frame = pd.Series.to_frame(pd_series)
   return frame.to_html()
 
+def helper_dict_to_std_html(dict):
+  frame = pd.Series(dict).to_frame()
+  result = helper_format_df_as_std_html(frame)
+  return result
+
 
 def helper_add_class_to_tags(base_html, mods=[{'tag': "", 'class': ""}]):
   #read in html
@@ -45,8 +52,9 @@ def helper_add_class_to_tags(base_html, mods=[{'tag': "", 'class': ""}]):
   return (str(soup))
 
 
+
 def helper_format_df_as_std_html(df):
-  html_table = df.to_html(justify='left')
+  html_table = df.to_html(justify='left', render_links=True, escape=False)
   html_table = helper_add_class_to_tags(base_html=html_table,
                                         mods=[{
                                           'tag': "table",
@@ -90,16 +98,25 @@ def helper_format_parent_child_dfs_as_html(dfparent,dfchild,parentidcol="id", ch
                                         'class': "table-dark"
                                       }])
   return html_table
-    
 
-def test(df):
-  df["newcol"] = df.apply(lambda x: '--'.join('{}: {}'.format(key, value) for key, value in x.to_dict().items()), axis=1)
-  return df
+
+
+def helper_read_and_format_markdown(mkdwnfile):
+  
+  with open(mkdwnfile) as mdfile:
+    mkdwn = markdown.markdown(mdfile.read(), extensions=['extra','sane_lists'])
+    mkdwn = helper_add_class_to_tags(base_html = mkdwn, mods=[{'tag': "table", 'class': "table"},{'tag': "thead", 'class': "table-dark"}])
+
+  return mkdwn
+
+#def test(df):
+#  df["newcol"] = df.apply(lambda x: '--'.join('{}: {}'.format(key, value) #for key, value in x.to_dict().items()), axis=1)
+#  return df
   
 
 def helper_save_curr_plt_as_byte():
   figfile = BytesIO()
-  plt.savefig(figfile, format='png')
+  plt.savefig(figfile, format='png',bbox_inches='tight')
   figfile.seek(0)
   figure_png = base64.b64encode(figfile.getvalue()).decode('ascii')
   plt.clf()
@@ -121,3 +138,22 @@ def helper_format_request(var):
     else:
       var2[key] = None
   return var2
+
+
+
+def helper_add_links_to_frame_as_html(task_id, df = None, n_sims = None):
+  if df is None:
+    df = pd.DataFrame({"Sim Id":range(n_sims)})
+
+  df["link"] = df.apply(lambda x: "<a href="+ url_for('availability.ram_sim_result', task_id = task_id, sim_id = x["Sim Id"]) + ">link</a>", axis=1)
+  result = helper_format_df_as_std_html(df)
+
+  return result
+
+
+def helper_save_byte_as_image_tag(bytefile,plot_width = 500):
+  result = '<img src="data:image/png;base64,'+bytefile+'" width="'+str(plot_width)+'">'
+  return result
+  
+
+  
