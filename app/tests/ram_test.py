@@ -38,8 +38,9 @@ with Flask_app.app_context():
                                      componentlistdf = componentlistdf,
                                      duration=duration)
   
-    print(test_result["FM_lifetimes"])
-    print(test_result["Event_log_all"])
+    #print(test_result["FM_lifetimes"])
+    #print(test_result["Event_log_all"])
+    print(test_result["inventory_log"])
 
   #ram model compilation test
   elif testid == 2:
@@ -55,6 +56,8 @@ with Flask_app.app_context():
 
     print(cm["hierarchy"])
     print(cm["eq_fm_map"])
+    print(cm["failuremodedf"])
+    print(cm["tag_map"])
 
 
   elif testid == 3:
@@ -70,14 +73,35 @@ with Flask_app.app_context():
                                  inventorydf,
                                  componentlistdf,
                                  duration,
-                                 n_sims=4)
+                                 n_sims=2)
 
     #print(model_result["times"])
     #print(model_result["details"][0])
-    print(model_result["stats"]["Inv_Av_Stats"])
-    print(model_result["stats"]["Eq_Crit"])  
-    print(model_result["stats"]["Eq_Crit_Stats"])  
+    print(model_result["stats"]["Inv_Stats"])
+    print(model_result["stats"]["Maint"])
+    #print(model_result["stats"]["Eq_Av_Stats"])
+    #print(model_result["stats"]["Eq_Crit"])  
+    #print(model_result["stats"]["Eq_Crit_Stats"])  
     #print(model_result["details"][0])
+    #m = model_result["stats"]["Maint"]
+    #print(m)
+    #m1 = m.drop(["sim_id"], axis=1).groupby(["Task"]).describe().drop([("Duration","count")], axis=1)
+    #m1.columns = m1.columns.map('_'.join)
+    #print(m1)
+
+    #m1 = m.drop(["sim_id"], axis=1).rename(columns={"Duration":"value"})
+    #m1["Measure"] = "Duration"
+
+    #m2 = m.groupby(["Task","sim_id"]).count().reset_index().drop(["sim_id"], axis=1).rename(columns = {"Duration":"Task_Count"}).groupby(["Task"]).describe()
+    #print(m2)
+    #m2 = m.groupby(["Task","sim_id"]).count().reset_index().drop(["sim_id"], axis=1).rename(columns = {"Duration":"value"})
+    #m2["Measure"] = "Task Count"
+
+    #m4 = pd.concat([m1,m2], ignore_index=True).groupby(["Task","Measure"]).describe()
+    #print(m4)
+
+    #m3 = m.groupby(["Task", "sim_id"]).describe()
+    #print(m3)
     
   elif testid == 4:
     from app.availability.static.helpers.ram_functions import run_ram_model, run_ram_model_pool

@@ -38,7 +38,7 @@
             </div>
             <button type="submit" class="btn btn-primary">Create Model</button>
           </form>
-          <form id="formloadmodel" hidden>
+          <form id="formloadmodel" action="{{url_for('availability.ram_model_manager')}}" method="POST" hidden>
             <div class="mb-3">
               <label for="rammodelselect" class="form-label">Lookup Model</label>
               <select class="form-select" aria-label="Default select example" id="rammodelselect" name="rammodelselect">
@@ -58,61 +58,7 @@
   
   
   
-  <h2>Step2. Build Out Ram model Specs</h2>
-  <div class="accordion" id="accordionExample">
-    {% for acc_item in ["Equipment Index", "Sub-System Index","System Compiler","Maintenance", "Spares"] %}
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="heading{{loop.index}}">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
-          {{acc_item}}
-        </button>
-      </h2>
-      <div id="collapse{{loop.index}}" class="accordion-collapse collapse" aria-labelledby="heading{{loop.index}}" data-bs-parent="#accordionExample">
-        <div class="accordion-body">
-
-          
-          {% if loop.index == 1 %}
-
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Equipment Selection</h5>
-            <div id="equipment_table"></div>
-          </div>
-
-
-          
-          {% elif loop.index == 2 %}
-
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Sub-System Definition</h5>
-            <div id="sub_system_table"></div>
-          </div>
-
-          {% elif loop.index == 3 %}
-
-          <div class="m-2 h-100">
-            <h5 class="d-inline">System Definition</h5>
-            <div id="system_table"></div>
-          </div>
-          
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-
-  <h2>Step3. Run Outputs</h2>
-  <form id = "run-ram" method = "POST" action = "{{url_for('availability.ram_result')}}">
-    <button id= "run_ram_model" type="submit" class="btn btn-primary">load RAM</button>
-  </form>
-
-  <form>
-    <button id= "generate_rbd" type="submit" class="btn btn-primary">Draw RBD</button>
-  </form>
-  
-
 </div>
-
 {% endblock %}
 
 {% block scripts %}

@@ -53,8 +53,10 @@ def helper_add_class_to_tags(base_html, mods=[{'tag': "", 'class': ""}]):
 
 
 
-def helper_format_df_as_std_html(df):
-  html_table = df.to_html(justify='left', render_links=True, escape=False)
+def helper_format_df_as_std_html(df, ff = None, formatters = None):
+  #'{:,.2%}'.format
+  
+  html_table = df.to_html(justify='left', render_links=True, escape=False, float_format = ff, formatters = formatters)
   html_table = helper_add_class_to_tags(base_html=html_table,
                                         mods=[{
                                           'tag': "table",
@@ -143,7 +145,7 @@ def helper_format_request(var):
 
 def helper_add_links_to_frame_as_html(task_id, df = None, n_sims = None):
   if df is None:
-    df = pd.DataFrame({"Sim Id":range(n_sims)})
+    df = pd.DataFrame({"Sim Id":range(1,n_sims+1)})
 
   df["link"] = df.apply(lambda x: "<a href="+ url_for('availability.ram_sim_result', task_id = task_id, sim_id = x["Sim Id"]) + ">link</a>", axis=1)
   result = helper_format_df_as_std_html(df)

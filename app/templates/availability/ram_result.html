@@ -8,7 +8,7 @@
   <h1>RAM Results</h1>
   
   <div class="accordion" id="accordionExample">
-    {% for acc_item in ["Simulation Times","Production Performance", "Inventory Summary","Equipment Criticality","RAM Report","Simulation Details"] %}
+    {% for acc_item in ["Simulation Times","Production Performance","Node Uptime","Equipment Criticality","Inspection Summary","Maintenance Summary","Inventory Summary","Details by Simulation","RAM Report"] %}
     <div class="accordion-item">
       <h2 class="accordion-header" id="heading{{loop.index}}">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
@@ -20,81 +20,60 @@
 
 
           {% if loop.index == 1 %}
-
+## simulation times
           <div class = "m-2 h-100">
             <h5 class="d-inline">Execution Times</h5>
             <div>
               {{times|safe}}
             </div>
           </div>
-
-          <!---
-          {#
           {% elif loop.index == 2 %}
-
+## production performance
           <div class = "m-2 h-100">
-            <h5 class="d-inline">Simulation Outcomes</h5>
-            <a href="#" onclick="download_table_as_csv('sampletablewrapper');" class="fa-solid fa-download"></a>
-            <div id="sampletablewrapper" class="table-responsive h-100">
-              {{simulation_stats|safe}}
+            <h5 class="d-inline">Probabilistic Performance</h5>
+            <div><p>Chart Placeholder</p>
+            </div>
+            <div>
+              {{Sys_Av_Stats|safe}}
             </div>
           </div>
 
           {% elif loop.index == 3 %}
-
-          <div class="m-2">
-            {% if histogram is defined and histogram|length %}
-              <h5>Histogram</h5>
-              <img src="data:image/png;base64,{{ histogram }}" width="500">
-            {% endif %}
-          </div>
-          
-          {% endif %}
-          #} --->
-          {% elif loop.index == 2 %}
-
+## Node uptime
           <div class = "m-2 h-100">
-            <h5 class="d-inline">By Simulation</h5>
-            <div>
-              {{av|safe}}
-            </div>
             <h5 class="d-inline">Probabilistic Performance</h5>
             <div>
-              {{av_stats|safe}}
+              {{Eq_Av_Stats|safe}}
             </div>
           </div>
           
-          {% elif loop.index == 3 %}
-
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">By Simulation</h5>
-            <div>
-              {{inv|safe}}
-            </div>
-            <h5 class="d-inline">Probabilistic Performance</h5>
-            <div>
-              {{inv_stats|safe}}
-            </div>
-          </div>
-
           {% elif loop.index == 4 %}
-
+## equipment criticality
           <div class = "m-2 h-100">
-            <h5 class="d-inline">By Simulation</h5>
-            <div>
-              {{eq_crit|safe}}
-            </div>
             <h5 class="d-inline">Probabilistic Performance</h5>
             <div>
-              {{eq_crit_stats|safe}}
+              {{Eq_Crit_Stats|safe}}
+            </div>
+          </div>
+          {% elif loop.index == 6 %}
+## Maintennace summary
+          <div class = "m-2 h-100">
+            <h5 class="d-inline">Probabilistic Performance</h5>
+            <div>
+              {{Maint_Stats|safe}}
+            </div>
+          </div>
+          {% elif loop.index == 7 %}
+## inventory summary
+          <div class = "m-2 h-100">
+            <h5 class="d-inline">Probabilistic Performance</h5>
+            <div>
+              {{Inv_Stats|safe}}
             </div>
           </div>
 
-
-
-          
-          {% elif loop.index == 6 %}
-
+          {% elif loop.index == 8 %}
+## details by sim
           <div class = "m-2 h-100">
             <h5 class="d-inline">By Simulation</h5>
             <div>

@@ -41,6 +41,49 @@ def ram():
   models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
   return render_template('availability/ram.html', models = models)
 
+@bp.route('/ram/modelmanager/', methods=["POST"])
+@bp.route('/ram/modelmanager/<model_id>/', methods=["POST"])
+def ram_model_manager(model_id=None):
+  if (request.method == "POST") & (model_id is None):
+    #get model id from request
+    model_id = int(request.form["rammodelselect"])
+    #run some error checkinf
+    if model_id is None:
+      #other error checking to be added
+      return render_template('availability/ram.html', models = models)
+    else:
+      return redirect(url_for('availability.ram_model_manager', model_id = model_id), code=307)
+
+  else:
+    model = ram_db_funcs.helper_query_ram_model_db_by_model_id(modelid=model_id, format="html-std")
+    model_details = ram_db_funcs.helper_query_ram_model_db_by_model_id(modelid=model_id, format="df", tables=["model"])
+    equipmentdf = model["equipment"]
+    subsystemdf=model["subsystemstructure"]
+    systemdf=model["system"]
+    failuremodedf=model["failuremodes"]
+    inspectiondf=None
+    tbmdf = None
+    cbmdf = model["conditionbasedmaintenance"]
+    failuremoderesponsesdf=model["equipmentfailuremoderesponses"]
+    inventorydf = model["inventory"]
+    componentlistdf = model["componentlistdetails"]
+    return render_template('availability/ram_model_manager.html',
+                           model_id = model_details.loc[0,"id"],
+                           loaded_model_title = model_details.loc[0,"title"],
+                           equipmentdf = equipmentdf,
+                           systemdf = systemdf,
+                           failuremodedf = failuremodedf,
+                           failuremoderesponsesdf = failuremoderesponsesdf,
+                           inspectiondf = inspectiondf,
+                           cbmdf = cbmdf,
+                           tbmdf = tbmdf,
+                           inventorydf = inventorydf,
+                           componentlistdf = componentlistdf
+                          )
+    
+
+
+
 @bp.route('/ram/result/', methods=["POST"])
 @bp.route('/ram/result/<task_id>', methods=["GET"])
 def ram_result(task_id = None):
@@ -54,12 +97,11 @@ def ram_result(task_id = None):
     links = gff.helper_add_links_to_frame_as_html(task_id = task_id, n_sims = task_result["n_sims"])
     return render_template('availability/ram_result.html', 
                            times = task_result["times"], 
-                           av = task_result["av"],
-                           av_stats = task_result["av_stats"],
-                           inv = task_result["inv"],
-                           inv_stats = task_result["inv_stats"],
-                           eq_crit = task_result["eq_crit"],
-                           eq_crit_stats = task_result["eq_crit_stats"],
+                           Sys_Av_Stats = task_result["Sys_Av_Stats"],
+                           Eq_Av_Stats = task_result["Eq_Av_Stats"],
+                           Inv_Stats = task_result["Inv_Stats"],
+                           Eq_Crit_Stats = task_result["Eq_Crit_Stats"],
+                           Maint_Stats = task_result["Maint_Stats"],
                            links = links)
 
 
@@ -69,13 +111,19 @@ def ram_result(task_id = None):
 def ram_sim_result(task_id,sim_id):
   task = celery_task_router.AsyncResult(task_id)
   task_result = task.result
-  sim_result = task_result["details"][int(sim_id)]
 
-  uptime_plt = grh.helper_plot_time_based_df_as_html_image(pd.read_json(sim_result["FM_lifetimes"]))
-  inv_plt = grh.helper_plot_time_based_df_as_html_image(pd.read_json(sim_result["inventory_lifetimes"]))
-  logs = gff.helper_format_df_as_std_html(pd.read_json(sim_result["Event_log_all"]))
+  sim_results = ram_funcs.return_model_results_by_sim_id(compiled_results = task_result,sim_id = sim_id)
+
   return render_template('availability/ram_sim_result.html', 
-                        task_id = task_id, sim_id = sim_id, uptime_plt = uptime_plt, inv_plt = inv_plt, logs = logs)
+                        task_id = task_id,
+                         sim_id = sim_id,
+                         Sys_Av = sim_results["Sys_Av"],
+                         Eq_Av = sim_results["Eq_Av"],
+                         Inv= sim_results["Inv"],
+                         Eq_Crit = sim_results["Eq_Crit"],
+                         uptime_plt = sim_results["uptime_plt"],
+                         inv_plt = sim_results["inv_plt"],
+                         ev_log = sim_results["ev_log"])
   
 @bp.route('/ram/model/<model_id>/all')
 def api_ram_model_all(model_id):
