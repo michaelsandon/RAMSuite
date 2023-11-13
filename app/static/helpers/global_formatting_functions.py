@@ -29,8 +29,8 @@ def helper_series_to_html(pd_series):
   frame = pd.Series.to_frame(pd_series)
   return frame.to_html()
 
-def helper_dict_to_std_html(dict):
-  frame = pd.Series(dict).to_frame()
+def helper_dict_to_std_html(dict, name = None):
+  frame = pd.Series(dict, name = name).to_frame()
   result = helper_format_df_as_std_html(frame)
   return result
 
@@ -53,10 +53,10 @@ def helper_add_class_to_tags(base_html, mods=[{'tag': "", 'class': ""}]):
 
 
 
-def helper_format_df_as_std_html(df, ff = None, formatters = None):
+def helper_format_df_as_std_html(df, ff = None, formatters = None, table_id = None):
   #'{:,.2%}'.format
   
-  html_table = df.to_html(justify='left', render_links=True, escape=False, float_format = ff, formatters = formatters)
+  html_table = df.to_html(justify='left', render_links=True, escape=False, float_format = ff, formatters = formatters, table_id=table_id)
   html_table = helper_add_class_to_tags(base_html=html_table,
                                         mods=[{
                                           'tag': "table",
@@ -126,6 +126,15 @@ def helper_save_curr_plt_as_byte():
   return figure_png
 
 
+#Especially when you are running multiple processes or threads, it is much better to define your figure variable and work with it directly:
+
+#from matplotlib import pyplot as plt
+
+#f = plt.figure()
+#f.clear()
+#plt.close(f)
+
+
 def helper_format_request(var):
   var2 = {}
   for key in var.keys():
@@ -143,17 +152,17 @@ def helper_format_request(var):
 
 
 
-def helper_add_links_to_frame_as_html(task_id, df = None, n_sims = None):
+def helper_add_links_to_frame_as_html(task_id, df = None, n_sims = None, table_id=None):
   if df is None:
     df = pd.DataFrame({"Sim Id":range(1,n_sims+1)})
 
   df["link"] = df.apply(lambda x: "<a href="+ url_for('availability.ram_sim_result', task_id = task_id, sim_id = x["Sim Id"]) + ">link</a>", axis=1)
-  result = helper_format_df_as_std_html(df)
+  result = helper_format_df_as_std_html(df, table_id = table_id)
 
   return result
 
 
-def helper_save_byte_as_image_tag(bytefile,plot_width = 500):
+def helper_save_byte_as_image_tag(bytefile = helper_save_curr_plt_as_byte(),plot_width = 500):
   result = '<img src="data:image/png;base64,'+bytefile+'" width="'+str(plot_width)+'">'
   return result
   

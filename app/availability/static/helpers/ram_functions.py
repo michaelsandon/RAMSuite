@@ -8,7 +8,7 @@ from app.availability.static.helpers.availability_functions import helper_sample
 from datetime import datetime
 from multiprocessing import Pool
 from app.availability.static.helpers import ram_db_functions
-
+import reliability.Other_functions as reloth
 
 Blocktype = ["Equipment","System - Series", "System - Parallel"]
 
@@ -51,7 +51,7 @@ def prepare_rbd(config_file = new_rbd()):
     result["error"] = "Block types need to be populated"
 
   #Construct index for plotting
-  buffer = 0.75
+  buffer = 1.5
 
   #Step 1. relate each child in the config file to it's parent
   if "id" not in config_file.columns:
@@ -64,8 +64,8 @@ def prepare_rbd(config_file = new_rbd()):
   
   #step 2. define the height and width for each block in the file. Equipment blocks are a fixed size
   # the size of system blocks depend on the number of children and on the block type. Parallel blocks
-  config_file["Width"] = config_file.type.apply(lambda x: 5 if (x=="Equipment") else 0)
-  config_file["Height"] = config_file.type.apply(lambda x: 2 if (x=="Equipment") else 0)
+  config_file["Width"] = config_file.type.apply(lambda x: 10 if (x=="Equipment") else 0)
+  config_file["Height"] = config_file.type.apply(lambda x: 4 if (x=="Equipment") else 0)
 
   for i in range(max(config_file.level),0,-1):
     #data.loc[data['name'] == 'fred', 'A'] =
@@ -151,7 +151,7 @@ def draw_rbd_image(rbd_size, rbd_config):
   #plot blocks
   for block_index in rbd_config.index:
     ax.add_patch(Rectangle((rbd_config.x[block_index]-rbd_config.Width[block_index]/2, rbd_config.y[block_index]-rbd_config.Height[block_index]/2), rbd_config.Width[block_index], rbd_config.Height[block_index], edgecolor = 'black'))
-    ax.text(rbd_config.x[block_index], rbd_config.y[block_index]+rbd_config.Height[block_index]/2-0.5, rbd_config.tag[block_index], fontsize=6, horizontalalignment='center')
+    ax.text(rbd_config.x[block_index], rbd_config.y[block_index]+rbd_config.Height[block_index]/2-1, rbd_config.tag[block_index], fontsize=6, horizontalalignment='center')
 
   #plot lines
     if (rbd_config.conn[block_index]=="series"):
@@ -1087,11 +1087,13 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   
   stats["Eq_Av"] = pd.concat(stats["Eq_Av"], ignore_index=True)
   stats["Eq_Av_Stats"] = stats["Eq_Av"].drop(["sim_id"], axis=1).melt(id_vars=["signalid"]).groupby(["signalid","variable"]).describe().drop([("value","count")], axis=1)
+  stats["Eq_Av_Stats"].columns = stats["Eq_Av_Stats"].columns.droplevel(0)
     
   #stats["Inv_Av"] = pd.concat(stats["Inv_Av"], ignore_index=True)
   #stats["Inv_Av_Stats"] = stats["Inv_Av"].drop(["sim_id"], axis=1).melt(id_vars=["matl"]).groupby(["matl","variable"]).describe().drop([("value","count")], axis=1)
   stats["Inv"] = pd.concat(inv_p1+inv_p2, ignore_index=True)
   stats["Inv_Stats"] = stats["Inv"].drop(["sim_id"], axis=1).groupby(["matl","variable"]).describe().drop([("value","count")], axis=1)
+  stats["Inv_Stats"].columns = stats["Inv_Stats"].columns.droplevel(0)
   
   stats["Eq_Crit"] = pd.concat(stats["Eq_Crit"], ignore_index=True)
   stats["Eq_Crit_Stats"] = stats["Eq_Crit"].drop(["sim_id"], axis=1).describe().transpose().drop(["count"], axis=1)
@@ -1103,6 +1105,8 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   m2 = stats["Maint"].groupby(["Task","sim_id"]).count().reset_index().drop(["sim_id"], axis=1).rename(columns = {"Duration":"value"})
   m2["Measure"] = "Task Count"
   stats["Maint_Stats"] = pd.concat([m1,m2],ignore_index=True).groupby(["Task","Measure"]).describe()
+  stats["Maint_Stats"].columns = stats["Maint_Stats"].columns.droplevel(0)
+  
   stats["Maint"] = stats["Maint"].groupby(["Task", "sim_id"]).describe()
   stats["Maint"].columns = stats["Maint"].columns.map('_'.join)
   stats["Maint"].rename(columns={"Duration_count":"Count"}, inplace=True)
@@ -1110,10 +1114,11 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   processed_timestamp = datetime.now()
 
   result = {}
-  result["times"] = {"Start":str(start_timestamp),
+  result["times"] = {"Start": str(start_timestamp),
                     "Model Compilation":str(compiled_timestamp - start_timestamp),
                     "Model Simulation": str(simulated_timestamp - compiled_timestamp),
-                    "Results Processing":str(processed_timestamp - simulated_timestamp)}
+                    "Results Processing":str(processed_timestamp - simulated_timestamp),
+                    "Finish": str(processed_timestamp)}
   result["details"] = details
   result["stats"] = stats
 
@@ -1194,8 +1199,8 @@ def run_ram_model_celery(self, request_form, meta):
   failuremoderesponsesdf=model["equipmentfailuremoderesponses"]
   inventorydf = model["inventory"]
   componentlistdf = model["componentlistdetails"]
-  duration = 150000
-  n_sims = 5
+  duration = float(request_form['dur'])
+  n_sims = int(request_form['n_sims'])
 
   meta["current"] = 1
   self.update_state(meta = meta)
@@ -1218,7 +1223,7 @@ def run_ram_model_celery(self, request_form, meta):
         
 
   result = {}
-  result["times"] = gff.helper_dict_to_std_html(model_result["times"])
+  result["times"] = gff.helper_dict_to_std_html(model_result["times"], "times")
 
   for k,v in model_result["stats"].items():
     result[k] = gff.helper_format_df_as_std_html(v)
@@ -1232,6 +1237,13 @@ def run_ram_model_celery(self, request_form, meta):
   #result["eq_crit"] = gff.helper_format_df_as_std_html(model_result["stats"]["Eq_Crit"], ff= '{:,.2%}'.format)
   #result["eq_crit_stats"] = gff.helper_format_df_as_std_html(model_result["stats"]["Eq_Crit_Stats"])
   result["n_sims"] = n_sims
+
+  #plots
+  #reloth.histogram(model_result["stats"]["Sys_Av"]["uptime_%"].to_list())
+  plt.hist(model_result["stats"]["Sys_Av"]["uptime_%"], edgecolor = "black")
+  img = gff.helper_save_curr_plt_as_byte()
+  prod_plot = gff.helper_save_byte_as_image_tag(img)
+  result["plots"] = {"production_plot":prod_plot}
 
   #convert to json serialisable for celery task passing
   for d in model_result["details"]:
@@ -1250,6 +1262,8 @@ def run_ram_model_celery(self, request_form, meta):
       model_result["stats"][k] = v
         
   result["stats"] = model_result["stats"]
+
+
   
   return result
 

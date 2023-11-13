@@ -11,6 +11,9 @@ from app.tasks.shared_tasks import celery_task_router
 
 import pandas as pd
 
+def models():
+  models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
+  return models
 
 @bp.route('/')
 def index():
@@ -38,8 +41,8 @@ def packageuptime_result(task_id=None):
 
 @bp.route('/ram/')
 def ram():
-  models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
-  return render_template('availability/ram.html', models = models)
+  #models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
+  return render_template('availability/ram.html', models = models())
 
 @bp.route('/ram/modelmanager/', methods=["POST"])
 @bp.route('/ram/modelmanager/<model_id>/', methods=["POST"])
@@ -50,7 +53,7 @@ def ram_model_manager(model_id=None):
     #run some error checkinf
     if model_id is None:
       #other error checking to be added
-      return render_template('availability/ram.html', models = models)
+      return render_template('availability/ram.html', models = models())
     else:
       return redirect(url_for('availability.ram_model_manager', model_id = model_id), code=307)
 
@@ -71,6 +74,7 @@ def ram_model_manager(model_id=None):
                            model_id = model_details.loc[0,"id"],
                            loaded_model_title = model_details.loc[0,"title"],
                            equipmentdf = equipmentdf,
+                           subsystemdf = subsystemdf,
                            systemdf = systemdf,
                            failuremodedf = failuremodedf,
                            failuremoderesponsesdf = failuremoderesponsesdf,
@@ -94,10 +98,11 @@ def ram_result(task_id = None):
   else:
     task = celery_task_router.AsyncResult(task_id)
     task_result = task.result
-    links = gff.helper_add_links_to_frame_as_html(task_id = task_id, n_sims = task_result["n_sims"])
+    links = gff.helper_add_links_to_frame_as_html(task_id = task_id, n_sims = task_result["n_sims"], table_id="links")
     return render_template('availability/ram_result.html', 
                            times = task_result["times"], 
                            Sys_Av_Stats = task_result["Sys_Av_Stats"],
+                           prod_plot = task_result["plots"]["production_plot"],
                            Eq_Av_Stats = task_result["Eq_Av_Stats"],
                            Inv_Stats = task_result["Inv_Stats"],
                            Eq_Crit_Stats = task_result["Eq_Crit_Stats"],
@@ -152,25 +157,33 @@ def content_ram_model_subsystems(model_id, datatype = None):
   return response
 
 
-@bp.route('/ram/model/<model_id>/rbd/')
-@bp.route('/ram/model/<model_id>/rbd/<image>')
-def model_rbd(model_id,image = None):
+    
+@bp.route('/ram/rbd/', methods=["POST"])
+@bp.route('/ram/rbd/<model_id>/', methods=["POST"])
+def ram_model_rbd(model_id=None):
+  if (request.method == "POST") & (model_id is None):
+    #get model id from request
+    model_id = int(request.form["model_id"])
+    #run some error checkinf
+    if model_id is None:
+      #other error checking to be added
+      return render_template('availability/ram.html', models = models())
+    else:
+      return redirect(url_for('availability.ram_model_rbd', model_id = model_id), code=307)
 
-  eqdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["equipment"], modelid=model_id,format="df")
-  subsysdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemstructure"], modelid=model_id,format="df")
-  sysdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["system"], modelid=model_id,format="df")
+  else:
+    eqdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["equipment"], modelid=model_id,format="df")
+    subsysdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["subsystemstructure"], modelid=model_id,format="df")
+    sysdf = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["system"], modelid=model_id,format="df")
+  
+    compiled_sys = ram_funcs.compile_system_hierarchy(equipmentdf=eqdf,
+                                               subsystemdf=subsysdf,
+                                               systemdf=sysdf)
 
-  compiled_sys = ram_funcs.compile_system_hierarchy(equipmentdf=eqdf,
-                                             subsystemdf=subsysdf,
-                                             systemdf=sysdf)
-
-  if image is not None:
     rbd_file = ram_funcs.prepare_rbd(config_file = compiled_sys)
     rbd_image = ram_funcs.draw_rbd_image(rbd_file["size"],rbd_file["config"])
     response = render_template('availability/rbd.html', rbd_image = rbd_image)
-  else:
-    rbd_file = ram_funcs.prepare_rbd(config_file = compiled_sys)
-    response = gff.helper_format_df_as_std_html(rbd_file["config"])#compiled_sys)
+
   return response
   #return gff.helper_format_df_as_std_html(compiled_sys)
 

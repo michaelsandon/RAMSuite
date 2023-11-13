@@ -31,12 +31,6 @@ def add_rbd_block(RBD = new_rbd(), tag = "", description = "", level = 2, type =
 
 
 
-
-
-
-
-
-
 #helperfunction for initialising deconstructed models
 def new_model(title, desc, type="System - Series"):
   model = {"meta":{"title":title,"desc":desc},
@@ -200,7 +194,7 @@ def fw_decon_ram():
   ss1 = add_block_to_subsys(ss = ss1,block = new_block(block_tag="Pump",localid=3))
   ss1 = add_block_to_subsys(ss = ss1,block = new_block(block_tag="Motor",localid=4))
 
-  ss2 = new_subsys(ss_tag="Pump System", type = "System - Parallel",m=1,n=2)
+  ss2 = new_subsys(ss_tag="Pump System", type = "System - Parallel",m=2,n=2)
   ss2 = add_block_to_subsys(ss = ss2,block = new_block(block_tag="Pump Package",type="Subsystem",localid=1))
   ss2 = add_block_to_subsys(ss = ss2,block = new_block(block_tag="Pump Package",type="Subsystem",localid=1))
 

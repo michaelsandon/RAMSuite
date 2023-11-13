@@ -16,71 +16,45 @@
         </button>
       </h2>
       <div id="collapse{{loop.index}}" class="accordion-collapse collapse" aria-labelledby="heading{{loop.index}}" data-bs-parent="#accordionExample">
-        <div class="accordion-body">
-
+        <div class="accordion-body m-2">
+          <h2>{{acc_item}}</h2>
 
           {% if loop.index == 1 %}
-## simulation times
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Execution Times</h5>
             <div>
               {{times|safe}}
             </div>
-          </div>
           {% elif loop.index == 2 %}
-## production performance
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Probabilistic Performance</h5>
-            <div><p>Chart Placeholder</p>
+            <p> Production performance is based on measurement of the </p>
+            <h3>Distribution of Production Performance</h3>
+            <div>
+              {{prod_plot|safe}}
             </div>
+            <h3>Key Probabilistic Markers of Production Performance</h3>
             <div>
               {{Sys_Av_Stats|safe}}
             </div>
-          </div>
 
           {% elif loop.index == 3 %}
-## Node uptime
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Probabilistic Performance</h5>
             <div>
               {{Eq_Av_Stats|safe}}
             </div>
-          </div>
           
           {% elif loop.index == 4 %}
-## equipment criticality
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Probabilistic Performance</h5>
             <div>
               {{Eq_Crit_Stats|safe}}
             </div>
-          </div>
           {% elif loop.index == 6 %}
-## Maintennace summary
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Probabilistic Performance</h5>
             <div>
               {{Maint_Stats|safe}}
             </div>
-          </div>
           {% elif loop.index == 7 %}
-## inventory summary
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">Probabilistic Performance</h5>
             <div>
               {{Inv_Stats|safe}}
             </div>
-          </div>
-
           {% elif loop.index == 8 %}
-## details by sim
-          <div class = "m-2 h-100">
-            <h5 class="d-inline">By Simulation</h5>
             <div>
               {{links|safe}}
             </div>
-          </div>
-
           {% endif %}
           
         </div>

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="content-container">
-  <h2>Ram Model Specifications</h2>
+  <h3 class="section-heading">Ram Model Specifications</h3>
   <div><b>Model ID: </b><span id="loaded-model-id">{{model_id}}</span></div>
   <div><b>Model Title: </b><span id="loaded-model-id">{{loaded_model_title}}</span></div>
   <div class="accordion" id="accordionExample">
@@ -40,7 +40,7 @@
           {% elif loop.index == 2 %}
 
           <div class = "m-2 h-100 table-responsive">
-
+            {{subsystemdf|safe}}
           </div>
 
           {% elif loop.index == 3 %}
@@ -82,7 +82,7 @@
           {% elif loop.index == 9 %}
 
           <div class="m-2 h-100 table-responsive">
-            {{tbmdf|safe}}
+            {{inventorydf|safe}}
           </div>
 
           {% elif loop.index == 10 %}
@@ -99,7 +99,7 @@
     {% endfor %}
   </div>
 
-  <h2>Outputs</h2>
+  <h3 class="section-heading">Outputs</h3>
   <div class="accordion" id="ramoutputaccordion">
     <div class="accordion-item">
       <h2 class="accordion-header" id="ro_lab_1">
@@ -129,7 +129,7 @@
       </h2>
       <div id="ro_two" class="accordion-collapse collapse show" aria-labelledby="ro_lab_2" data-bs-parent="#ramoutputaccordion">
         <div class="accordion-body">
-          <form class ="rounded border bg-light my-2">
+          <form id="draw-rbd" class ="rounded border bg-light my-2" action="{{url_for('availability.ram_model_rbd')}}" method="POST">
             <button id= "generate_rbd" type="submit" class="btn btn-primary">Generate RBD</button>
           </form>
         </div>

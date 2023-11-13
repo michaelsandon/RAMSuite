@@ -25,6 +25,17 @@ form {
 
 #tile-container {
   overflow: auto;
+  margin-right:20px;
+}
+
+#tile-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+#tile-container {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 .coverlarge {
@@ -32,7 +43,40 @@ form {
   writing-mode: vertical-lr;
 }
 
+/*
+.carousel-1 {
+  background-image: linear-gradient(
+    rgba(0, 51, 102,0.1),rgba(0, 51, 102,0.1)),
+    url("https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+  filter: grayscale(100%);
+}
 
+.carousel-2 {
+  background-image: linear-gradient(
+    rgba(0, 51, 102,0.8),rgba(0, 51, 102,0.8)),
+    url("https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+  filter: grayscale(100%);
+}
+*/
+
+
+.carousel-item {
+  min-height: 60vh;
+  background-size: cover;
+  padding-left:10%;
+  padding-right:10%;
+  padding-top:5%;
+  /*box-shadow: 
+    0 0 20px rgba(0, 51, 102,0.5) inset, 
+    0 0 40px rgba(0, 51, 102,0.5) inset, 
+    0 0 60px rgba(0, 51, 102,0.5) inset, 
+    0 0 80px rgba(0, 51, 102,0.5) inset;*/
+}
+
+.tiles {
+  justify-content:center;
+  padding-bottom:8rem;
+}
 /*------------------- Base App Styling ---------------------*/
 #content {
   background: rgba(0, 51, 102,0.3);
@@ -86,6 +130,69 @@ fieldset {
 legend {
   font-size: 14px;p
 }
+
+
+.section-heading {
+  font-weight: bold;
+  color: black;
+  text-transform: uppercase;
+  text-align:left;
+  margin-top:10px;
+}
+
+.section-heading:before {
+  content: "";
+  display: block;
+  width: 150px;
+  height: 5px;
+  background: #019fb6;
+  left: 2px;
+  position: relative;
+}
+
+h1:not(.home) {
+  font-weight: bold;
+  color: black;
+  text-transform: uppercase;
+  text-align:left;
+  margin-top:10px;
+  font-size:calc(1.3rem + .6vw);
+}
+
+h1:not(.home)::before {
+  content: "";
+  display: block;
+  width: 150px;
+  height: 5px;
+  background: #019fb6;
+  left: 2px;
+  position: relative;
+}
+
+h2:not(.accordion-header) {
+  font-size:calc(1.275rem + .3vw);
+  font-weight: 600;
+}
+
+h2:not(.accordion-header)::before {
+  content: '';
+  display: inline-block;
+  width: 30px;
+  height: 18px;
+  position: relative;
+  top:0px;
+  left: 0px;
+  border-radius 0px;
+  background-color: #69b6d5;
+  margin-right:5px;
+}
+
+h3 {
+  color: #69b6d5;
+  font-size:calc(1.25rem + 0.15vw);
+  font-weight: bold;
+}
+  
 /*------------------- Download icon ---------------------*/
 
 .fa {  
