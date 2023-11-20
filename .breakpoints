@@ -4,29 +4,29 @@
       {
         "id": "8bf2639c-a1dd-4b00-aa36-e4a4d486fb23",
         "line": 35,
-        "version": 1549,
-        "index": 1164
+        "version": 1635,
+        "index": 1174
       }
     ],
     "app/templates/availability/ram.html": [
       {
         "id": "8c9555f5-f291-48e7-9a23-39b9bf737df5",
-        "line": 61,
-        "version": 1320,
-        "index": 2902
+        "line": 57,
+        "version": 1327,
+        "index": 2739
       }
     ],
     "app/tests/ram_test.py": [
       {
         "id": "91aa8fd6-24aa-4783-8aa7-6a51d244e23f",
         "line": 31,
-        "version": 2402,
+        "version": 2473,
         "index": 836
       },
       {
         "id": "a8d2b5a3-803a-4775-a349-d2282729ddb2",
         "line": 31,
-        "version": 2402,
+        "version": 2473,
         "index": 836
       }
     ]

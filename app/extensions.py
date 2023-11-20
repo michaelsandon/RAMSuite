@@ -1,5 +1,6 @@
 from celery import Celery, Task
 from flask_sqlalchemy import SQLAlchemy
+import ssl
 #def celery_init_app(app: Flask) -> Celery:
 #    class FlaskTask(Task):
 #        def __call__(self, *args: object, **kwargs: object) -> object:

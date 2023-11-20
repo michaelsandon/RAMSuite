@@ -1,0 +1,29 @@
+{% extends 'base_app.html' %}
+{% block head %}
+  {{super()}}
+{% endblock %}
+
+{% block content %}
+<h1>{{title}}</h1>
+<div>Filter placeholder</div>
+<div id="tile-container" class="flex-grow-1">
+  <div  class="d-flex flex-row flex-wrap justify-content-center">
+    {% for index, row in tiles.iterrows() %}
+    <div class="card m-2" style="width: 18rem;">
+      <img src="{{row['img_src']}}" class="card-img-top" alt="...">
+      <div class="card-body">
+        <h5 class="card-title">{{row['title']}}</h5>
+        <p class="card-text">{{row['desc']}}</p>
+        <a href="{{row['url']}}" target="_blank" class="btn btn-primary"> Link >> </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>        
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{super()}}
+{% endblock %}

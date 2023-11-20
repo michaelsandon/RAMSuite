@@ -77,13 +77,13 @@ with Flask_app.app_context():
 
     #print(model_result["times"])
     #print(model_result["details"][0])
-    #print(model_result["stats"]["Inv_Stats"])
+    print(model_result["stats"]["Inv_Stats"])
+    #print(model_result["stats"]["Maint_Stats"])
     #print(model_result["stats"]["Maint"])
+    #print(model_result["stats"]["Eq_Av"])
+    #print(model_result["stats"]["Eq_Av_Stats"].reset_index())
     #print(model_result["stats"]["Eq_Av_Stats"])
-    print(model_result["stats"]["Sys_Av"])
-    import matplotlib.pyplot as plt
-    plt.hist(model_result["stats"]["Sys_Av"]["uptime_%"])
-    plt.show()
+    #print(model_result["stats"]["Sys_Av"])
     #print(model_result["stats"]["Eq_Crit"])  
     #print(model_result["stats"]["Eq_Crit_Stats"])  
     #print(model_result["details"][0])

@@ -1,6 +1,8 @@
 import matplotlib
 
 matplotlib.use('agg')
+
+import matplotlib.pyplot as plt
 import reliability.Distributions as reldist
 import reliability.Fitters as relfit
 import reliability.Probability_plotting as relplot
@@ -52,7 +54,8 @@ def survival_analysis(life_data,
                         'probability_plot': True,
                         'sf_plot': True,
                         'km_plot': True
-                      }):
+                      },
+                     updates = None):
 
   #clean up df if needed
   life_data = life_data.fillna(value={'qty': 1, 'censor': False})
@@ -64,6 +67,12 @@ def survival_analysis(life_data,
                              columns=life_data.columns).drop('qty', axis=1)
 
   #perform analysis
+  if updates is not None:
+    self = updates[0]
+    meta = updates[1]
+    meta.update({"status":"Fitting Survival Distribution(s)","current":1})
+    self.update_state(state='PROGRESS', meta= meta)
+    
   fit_func = getattr(relfit, "Fit_" + method)
   #plt.subplot(121)
   fit = fit_func(
@@ -77,12 +86,16 @@ def survival_analysis(life_data,
   result = fit.results
 
   #generate and store plots
+  if updates is not None:
+    meta.update({"status":"Producing selected plots","current":2})
+    self.update_state(state='PROGRESS', meta= meta)
+    
   plots = {}
 
   for key, plotitem in plot_options.items():
     if plotitem:
       plotted = False
-
+      fig = plt.figure()
       try:
         match key:
           case 'probability_plot':
@@ -93,16 +106,18 @@ def survival_analysis(life_data,
                 life_data['time'][life_data['censor'] == True]).to_list(),
               show_probability_plot=True,
               print_results=False,
-              downsample_scatterplot=False)
+              downsample_scatterplot=False,
+              figure = fig
+            )
             plotted = True
           case 'sf_plot':
-            fit.distribution.SF(label='Fitted Distribution', color='steelblue')
+            fit.distribution.SF(label='Fitted Distribution', color='steelblue', figure = fig)
             relplot.plot_points(failures=(
               life_data['time'][life_data['censor'] != True]).to_list(),
                                 func='SF',
                                 label='failure data',
                                 color='red',
-                                alpha=0.7)
+                                alpha=0.7, figure = fig)
             plotted = True
           case 'km_plot':
             relnp.KaplanMeier(
@@ -114,7 +129,9 @@ def survival_analysis(life_data,
               print_results=False,
               plot_CI=True,
               CI=0.95,
-              plot_type='SF')
+              plot_type='SF',
+              figure = fig
+            )
             plotted = True
           # If an exact match is not confirmed, this last case will be used if provided
           case _:
@@ -123,11 +140,49 @@ def survival_analysis(life_data,
         plotted = False
 
       if plotted:
-        plot_png = gff.helper_save_curr_plt_as_byte()
-        plots[key] = {'title': key, 'img': plot_png}
+        plot_html = gff.helper_save_plot_as_html_image(fig = fig)
+        plots[key] = {'title': key, 'img': plot_html}
 
   #adjust outputs if necessary
+  if updates is not None:
+    meta.update({"status":"Finalising outputs","current":3})
+    self.update_state(state='PROGRESS', meta= meta)
+    
   if (output == "html"):
     result = gff.helper_format_df_as_std_html(result)
 
   return {"Datatables": result, "Plots": plots}
+
+
+
+def survival_analysis_celery(self,request_form,meta):
+  #convert form request to input dictionary and then to dataframe
+  meta.update({"status":"cleaning input data", "current":0,"total":3})
+  self.update_state(state='PROGRESS', meta= meta)
+  
+  observed_life_data_dict = {
+    'time': request_form['survivaltimes'],
+    'censor': request_form['survivalcensor'],
+    'qty': request_form['survivalqty']
+  }
+  observed_life_data_df = gff.helper_formdata_to_df(
+    form_data=observed_life_data_dict)
+
+  #manage checkboxes
+  plot_options = {}
+  for plotkey in ['probability_plot', 'sf_plot', 'km_plot']:
+    if plotkey in request_form:
+      plot_options[plotkey] = True
+    else:
+      plot_options[plotkey] = False
+
+  #perform analysis
+  analysis_results = survival_analysis(
+    life_data=observed_life_data_df,
+    grouped=True,
+    output="html",
+    method=request_form['fitmethod'],
+    plot_options = plot_options,
+    updates = [self,meta.copy()])
+
+  return analysis_results

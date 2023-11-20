@@ -6,15 +6,16 @@
 {% block content %}
 <div class="content-container">
   <h1>Survival Results</h1>
-  <h5>Parametric Model: Fitted Parameters</h5>
+  <h2>Parametric Model: Fitted Parameters</h2>
   <div class="table-responsive">
     {{data|safe}}
   </div>
   
-  {% if result is defined and result|length %}
+  {% if plots is defined and plots|length %}
+  <h2>Plots</h2>
     {% for key, value in plots.items() %}
-    <h5>{{value["title"]}}</h5>
-    <img src="data:image/png;base64,{{ value.img }}" width="500">
+    <h3>{{value["title"]}}</h3>
+    {{value["img"]|safe}}
     {% endfor %}
   {% endif %}
 </div>

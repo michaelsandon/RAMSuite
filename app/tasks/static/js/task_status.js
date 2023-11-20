@@ -5,12 +5,13 @@ function update_progress(status_url, nanobar, status_div) {
         // update UI
 
         percent = parseInt(data['current'] * 100 / data['total']);
-        nanobar.go(percent);
+        nanobar.go(percent.toFixed(2));
 
         status_div.children().eq(1).text(percent + '%');
         status_div.children().eq(2).text(data['status']);
 
         if (data['state'] == 'SUCCESS'){
+          status_div.children().eq(1).text('Task Complete - Redirecting');
           location.reload();
         } else if (data['state'] == 'FAILURE') {
           $(status_div.childNodes[3]).text('Result: ' + data['state']);

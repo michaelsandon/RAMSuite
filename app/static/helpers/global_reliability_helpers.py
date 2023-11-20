@@ -9,7 +9,7 @@ def helper_init_seed():
 
 def process_uptime_signals(signaldf, signaltype = None,sim_id = None):
   #expect input as a dataframe with multiple columns: time, fm1,fm2
-  columns = ['signalid','dt_events','uptime','uptime_%','mwa_sig_val']
+  columns = ['signalid','dt_events','mean_dt','uptime','uptime_%','mwa_sig_val']
   result = pd.DataFrame(columns=columns)
 
   signals = signaldf.columns.to_list()
@@ -42,6 +42,7 @@ def process_uptime_signals(signaldf, signaltype = None,sim_id = None):
     #results
     result.loc[len(result)] = {'signalid':sigid,
                                'dt_events':calc_df['downtime_ind'].sum(),
+                               'mean_dt':((calc_df['time'].max() - calc_df['time'].min()) - calc_df['uptime'].sum())/max(calc_df['downtime_ind'].sum(),1),
                                'uptime':calc_df['uptime'].sum(),
                                'uptime_%':calc_df['uptime'].sum() / (calc_df['time'].max() - calc_df['time'].min()),
                                'mwa_sig_val':calc_df['tw_val'].sum() / (calc_df['time'].max() - calc_df['time'].min())}
@@ -53,7 +54,7 @@ def process_uptime_signals(signaldf, signaltype = None,sim_id = None):
   if signaltype == "eq":
     result.rename(columns={"mwa_sig_val":"mean-weighted-average-availability"}, inplace=True)
   if signaltype == "matl":
-    result.rename(columns={"dt_events":"stock-out_events","mwa_sig_val":"avg-stock-in-inventory","signalid":"matl"}, inplace=True)
+    result.rename(columns={"dt_events":"stock-out_events","mwa_sig_val":"avg-stock-in-inventory","signalid":"matl","mean_dt":"mean stock-out dur"}, inplace=True)
     result.drop(columns=["uptime","uptime_%"], inplace=True)
       
   return result

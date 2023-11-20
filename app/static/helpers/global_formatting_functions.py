@@ -116,15 +116,34 @@ def helper_read_and_format_markdown(mkdwnfile):
 #  return df
   
 
-def helper_save_curr_plt_as_byte():
+def helper_save_curr_plt_as_byte(axes_handle = None, fig = None):
+  #https://www.geeksforgeeks.org/matplotlib-axes-axes-get_figure-in-python/ update this function
   figfile = BytesIO()
-  plt.savefig(figfile, format='png',bbox_inches='tight')
+  if (axes_handle is None) & (fig is None):
+    plt.savefig(figfile, format='png',bbox_inches='tight')
+    plt.clf()
+    plt.close()
+  else:
+    if fig is None:
+      fig = axes_handle.get_figure()   
+    fig.savefig(figfile, format='png',bbox_inches='tight')
+    fig.clear()
+    plt.close(fig)
+
   figfile.seek(0)
   figure_png = base64.b64encode(figfile.getvalue()).decode('ascii')
   plt.clf()
 
   return figure_png
 
+def helper_save_byte_as_image_tag(bytefile,plot_width = 500):
+  result = '<img src="data:image/png;base64,'+bytefile+'" width="'+str(plot_width)+'">'
+  return result
+
+def helper_save_plot_as_html_image(axes_handle = None, fig = None, plot_width = 500):
+  encoded_plot = helper_save_curr_plt_as_byte(axes_handle = axes_handle, fig = fig)
+  html_image = helper_save_byte_as_image_tag(bytefile = encoded_plot,plot_width = plot_width)
+  return html_image
 
 #Especially when you are running multiple processes or threads, it is much better to define your figure variable and work with it directly:
 
@@ -162,9 +181,7 @@ def helper_add_links_to_frame_as_html(task_id, df = None, n_sims = None, table_i
   return result
 
 
-def helper_save_byte_as_image_tag(bytefile = helper_save_curr_plt_as_byte(),plot_width = 500):
-  result = '<img src="data:image/png;base64,'+bytefile+'" width="'+str(plot_width)+'">'
-  return result
+
   
 
   

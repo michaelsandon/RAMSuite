@@ -1,5 +1,6 @@
 from app.survival import bp
 from app.survival.static.helpers import survival_functions
+from app.tasks.shared_tasks import celery_task_router
 import app.static.helpers.global_formatting_functions as gff
 from flask import render_template, request, redirect, url_for
 
@@ -37,7 +38,21 @@ def distsample_result():
 def survivalfit():
   return render_template('survival/survivalfit.html')
 
+@bp.route('/survivalfit/result/', methods=["POST"])
+@bp.route('/survivalfit/result/<task_id>', methods=["GET"])
+def survivalfit_result(task_id=None):
+  if request.method == "POST":
+    task = celery_task_router.apply_async(args = [request.form,"surv-fit", 'survival.survivalfit_result'])
+    return redirect(url_for('tasks.task', task_id=task.id))
 
+  else:
+    task = celery_task_router.AsyncResult(task_id)
+    task_result = task.result
+    return render_template('survival/survivalfit_result.html',
+                            data=task_result['Datatables'],
+                            plots=task_result['Plots'])
+
+""" - Commented - retrofitted async request for survival analysis
 @bp.route('/survivalfit/result/', methods=["GET", "POST"])
 def survivalfit_result():
   if request.method == "GET":
@@ -71,3 +86,4 @@ def survivalfit_result():
     return render_template('survival/survivalfit_result.html',
                            data=analysis_results['Datatables'],
                            plots=analysis_results['Plots'])
+"""

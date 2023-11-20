@@ -35,7 +35,7 @@ def render_site_map():
   cost = create_map_branch("Cost","Lifecycle Cost evaluation module",'main.index')
   map.append(cost)
 
-  maintenance = create_map_branch("Maintenance", "Reliability Centred Maintenance, Strategy Tester",'main.index')
+  maintenance = create_map_branch("Maintenance", "Reliability Centred Maintenance, Strategy Tester",'maintenance.index')
   map.append(maintenance)
 
 
@@ -45,6 +45,12 @@ def render_site_map():
   examples = create_map_branch("Examples","Worked examples to demonstrate how to apply the toolkit", 'examples.index')
   examples = create_map_branch_child("Survival Examples", "Examples using the survival toolkit",'examples.survival', examples)
   map.append(examples)
+
+  resources = create_map_branch("Resources","Standards and Tools supporting the practice", 'resources.index')
+  resources = create_map_branch_child("Standards and Journals", "International Standards and Journals for Guidance",'resources.standards_and_journals', resources)
+  resources = create_map_branch_child("Data", "data to be used at user discretion",'resources.data', resources)
+  resources = create_map_branch_child("Software", "Free and Licensed Software",'resources.software', resources)
+  map.append(resources)
   
   return map
   

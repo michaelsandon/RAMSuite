@@ -4,12 +4,6 @@
   font-family: Georgia, monospace, "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
-form {
-  width: 60%;
-  max-width: 600px;
-  min-width: 400px;
-  padding: 20px;
-}
 
 .card-body{
   cursor:pointer;
@@ -19,7 +13,7 @@ form {
   background-image: linear-gradient(
     rgba(0, 51, 102,0.8),rgba(0, 51, 102,0.8)),
     url("/static/img/reliability_background.jpg");
-  height: 100vh;
+  min-height: 100vh;
 }
 
 
@@ -38,7 +32,11 @@ form {
   scrollbar-width: none;  /* Firefox */
 }
 
-.coverlarge {
+h1.home:not(.home-upright) {
+  margin-left: 35px;
+}
+
+.home-upright {
   text-orientation: upright;
   writing-mode: vertical-lr;
 }
@@ -58,35 +56,70 @@ form {
   filter: grayscale(100%);
 }
 */
-
+.carousel-3 {
+  /*background-image: linear-gradient(
+    rgba(0, 51, 102,0.8),rgba(0, 51, 102,0.8)),
+    url("https://images.unsplash.com/photo-1601807576163-587225545555?q=80&w=1073&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")*/
+    /*url("https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+  filter: grayscale(100%);*/
+}
 
 .carousel-item {
   min-height: 60vh;
   background-size: cover;
+  background-position:center;
   padding-left:10%;
   padding-right:10%;
   padding-top:5%;
-  /*box-shadow: 
-    0 0 20px rgba(0, 51, 102,0.5) inset, 
+  box-shadow: 
+    /*0 10px 20px rgba(0, 51, 102,0.5) inset, 
     0 0 40px rgba(0, 51, 102,0.5) inset, 
     0 0 60px rgba(0, 51, 102,0.5) inset, 
     0 0 80px rgba(0, 51, 102,0.5) inset;*/
 }
 
 .tiles {
-  justify-content:center;
+  justify-content:space-evenly;
   padding-bottom:8rem;
 }
+
+.tile {
+  width: 200px;
+  text-align: center;
+}
+
+.tile-image {
+  object-fit:cover;
+  filter: grayscale(100%);
+}
+
+.example-tile {
+  width: 140px;
+  height: 140px;
+  background: rgba(255,255,255,0.1);
+  align-items: center;
+  box-shadow: 0 0 20px 2px #48abe0;
+}
+/*
+#carouselExampleCaptions {
+  box-shadow: 0px 10px 10px white;
+  margin: 20px;
+}*/
 /*------------------- Base App Styling ---------------------*/
 #content {
   background: rgba(0, 51, 102,0.3);
   padding-left: 20px;
   flex: 1 1 auto;
   overflow:auto;
+  padding-bottom:20px;
+  padding-right:20px;
 }
 
 #base-app-body {
   height: 100vh;
+  background-image: linear-gradient(
+    rgba(180,217,235,0.8),rgba(180,217,235,0.8)),
+    url("/static/img/reliability_background.jpg");
 }
 
 .background-dark-p {
@@ -100,37 +133,14 @@ form {
 }
 
 .dropdown-menu.show {
-  background-color: rgb(123, 166, 209)
+  background-color: rgb(51, 102, 153);
+  --bs-dropdown-link-hover-bg:rgba(45, 89, 134,1)
 }
 
 /*------------------- Generic Styling available for Base App content ---------------------*/
 .content-container {
   width: 80%;
 }
-
-.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-            color: red;
-            opacity: 1; /* Firefox */
-}
-
-.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
-            color: red;
-}
-
-.form-control::-ms-input-placeholder { /* Microsoft Edge */
-            color: red;
- }
-
-fieldset {
-  border: 2px groove;
-  padding: 5px;
-  border-radius: 5px;
-}
-
-legend {
-  font-size: 14px;p
-}
-
 
 .section-heading {
   font-weight: bold;
@@ -145,7 +155,7 @@ legend {
   display: block;
   width: 150px;
   height: 5px;
-  background: #019fb6;
+  background: #69b6d5;
   left: 2px;
   position: relative;
 }
@@ -164,7 +174,7 @@ h1:not(.home)::before {
   display: block;
   width: 150px;
   height: 5px;
-  background: #019fb6;
+  background: #69b6d5;
   left: 2px;
   position: relative;
 }
@@ -188,10 +198,63 @@ h2:not(.accordion-header)::before {
 }
 
 h3 {
-  color: #69b6d5;
-  font-size:calc(1.25rem + 0.15vw);
+  font-size:calc(1.25rem + 0.1vw);
+  text-transform: capitalize;
+  text-decoration:underline;
+}
+
+.card-body:hover {
+  background-color: #69b6d5;
+}
+
+
+form {
+  width: 60%;
+  max-width: 600px;
+  min-width: 400px;
+  padding: 20px;
+}
+
+.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+            color: red;
+            opacity: 1; /* Firefox */
+}
+
+.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
+            color: red;
+}
+
+.form-control::-ms-input-placeholder { /* Microsoft Edge */
+            color: red;
+ }
+
+.form-group {
+  margin: 5px;
+}
+
+fieldset {
+  border: 2px groove;
+  padding: 5px;
+  border-radius: 5px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+legend {
+  font-size: 16px;
   font-weight: bold;
 }
+
+label {
+  font-weight:500;
+  text-transform:capitalize;
+}
+
+button.btn {
+  margin:5px;
+}
+
+
   
 /*------------------- Download icon ---------------------*/
 
@@ -232,3 +295,70 @@ h3 {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+
+/*---------------- Animation -------------------*/
+.animate, #content {
+  animation-duration: 1s;
+  animation-delay: 0s;
+  animation-name: animate-slideleft;
+  animation-timing-function: cubic-bezier(.26, .53, .74, 1);
+  animation-fill-mode: backwards;
+}
+
+.animate.slideup { animation-name: animate-slideup; }
+
+@keyframes animate-slideup {
+  0% {
+    opacity: 0;
+    transform: translate(0,200px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0,0);
+  }
+}
+
+.animate.slideleft { animation-name: animate-slideleft; }
+
+@keyframes animate-slideleft {
+  0% {
+    opacity: 0;
+    transform: translate(150px,0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0,0);
+  }
+}
+
+.animate.appear, #content { animation-name: animate-appear; }
+
+@keyframes animate-appear {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+
+
+.an-1 {
+  animation-delay: 0s;
+}
+
+.an-2 {
+  animation-delay: 0.3s;
+}
+
+.an-3 {
+  animation-delay: 0.5s;
+}
+
+.an-4 {
+  animation-delay: 1.2s;
+}
+
+

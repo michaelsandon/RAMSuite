@@ -149,8 +149,20 @@ def draw_rbd_image(rbd_size, rbd_config):
   fig, ax = plt.subplots()
   
   #plot blocks
+  styles = {
+    "Eq":{"edgecolor":"black", "facecolor":"#8cb3d9"},
+    "Sys_int":{"edgecolor":"#b30000", "facecolor":"#d9d9d9","linestyle":"--"},
+    "Sys_top":{"edgecolor":"black", "facecolor":"#a3c2c2"}}
+  
   for block_index in rbd_config.index:
-    ax.add_patch(Rectangle((rbd_config.x[block_index]-rbd_config.Width[block_index]/2, rbd_config.y[block_index]-rbd_config.Height[block_index]/2), rbd_config.Width[block_index], rbd_config.Height[block_index], edgecolor = 'black'))
+    if rbd_config.loc[block_index,"type"] == "Equipment":
+      style = styles["Eq"]
+    elif rbd_config.loc[block_index,"level"] == 1:
+      style = styles["Sys_top"]
+    else:
+      style = styles["Sys_int"]
+    
+    ax.add_patch(Rectangle((rbd_config.x[block_index]-rbd_config.Width[block_index]/2, rbd_config.y[block_index]-rbd_config.Height[block_index]/2), rbd_config.Width[block_index], rbd_config.Height[block_index], **style))
     ax.text(rbd_config.x[block_index], rbd_config.y[block_index]+rbd_config.Height[block_index]/2-1, rbd_config.tag[block_index], fontsize=6, horizontalalignment='center')
 
   #plot lines
@@ -188,6 +200,7 @@ def draw_rbd_image(rbd_size, rbd_config):
   rbd_png = gff.helper_save_curr_plt_as_byte()
   
   return rbd_png
+
 
 
 #function to compile a RAM model
@@ -236,10 +249,20 @@ def compile_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspect
   tag_map_2["parent_id"] = tag_map_2.id.apply(lambda x: "eq"+str(eq_fm_map.loc[eq_fm_map.fmid==x,"eqid"].iloc[0]))
   tag_map_2["id"] = tag_map_2.id.apply(lambda x: "fm"+str(x))
   tag_map = pd.concat([tag_map_1,tag_map_2], ignore_index=True)
+  tag_map["Node Desc"] = tag_map.apply(lambda x: (x["id"]+': '+x["desc"]) if (x["id"] == "eq1") else (x["id"]+': '+x["desc"] + ' (child to '+x["parent_id"]+')'), axis=1)
+
+  #create overall task map
+  task_map_1 = cbmdf.loc[:,["id","target_fm","desc"]].copy()
+  task_map_1.rename(columns={"id":"Task"}, inplace=True)
+  task_map_1["Task"] = task_map_1.Task.apply(lambda x: "cbm_"+str(x))
+  task_map = pd.concat([task_map_1], ignore_index=True)
+  task_map["Task Desc"] = task_map.apply(lambda x: x["Task"] + ' ' +x["desc"] + ' (applied to fm'+str(x["target_fm"])+')',axis=1)
+  task_map.drop(["desc"],axis=1, inplace=True)
   
   result = {"hierarchy":system_hierarchy,
             "eq_fm_map":eq_fm_map,
             "tag_map":tag_map,
+            "task_map":task_map,
             "failuremodedf":failuremodes,
             "inspectiondf":inspectiondf,
             "tbmdf":tbmdf,
@@ -980,13 +1003,19 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
     
   hierarchydf = compiled_model["hierarchy"]
   eq_fm_map = compiled_model["eq_fm_map"]
+  tag_map = compiled_model["tag_map"]
+  task_map = compiled_model["task_map"]
   failuremodedf = compiled_model["failuremodedf"]
   inspectiondf = compiled_model["inspectiondf"]
   tbmdf = compiled_model["tbmdf"]
   cbmdf = compiled_model["cbmdf"]
   failuremoderesponsesdf = compiled_model["failuremoderesponsesdf"]
   compiled_timestamp = datetime.now()
-
+  inv_map = inventorydf.loc[:,["id","desc"]].copy()
+  inv_map["matl"] = inv_map.id.apply(lambda x: "matl"+str(x))
+  inv_map["matl desc"] = inv_map.apply(lambda x: x["matl"]+' '+x["desc"],axis=1)
+  inv_map.drop(["id","desc"],axis=1,inplace=True)
+  
   #update state
   if updates is not None:
     task_obj = updates[0]
@@ -1050,7 +1079,7 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   inv_p2 = []
   #update state
   if updates is not None:
-    meta.update({"status":"Evaluating stats","total":n_sims, "current":0})
+    meta.update({"status":"Evaluating Statistics for Uptime, Criticality, Inventory & Maintenance","total":n_sims, "current":0})
     task_obj.update_state(meta=meta)
     
   for i in range(len(details)):
@@ -1085,17 +1114,18 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   stats["Sys_Av"] = pd.concat(stats["Sys_Av"], ignore_index=True)
   stats["Sys_Av_Stats"] = stats["Sys_Av"].describe().drop(['count'], axis = 0).drop(['sim_id'], axis = 1)
   
-  stats["Eq_Av"] = pd.concat(stats["Eq_Av"], ignore_index=True)
-  stats["Eq_Av_Stats"] = stats["Eq_Av"].drop(["sim_id"], axis=1).melt(id_vars=["signalid"]).groupby(["signalid","variable"]).describe().drop([("value","count")], axis=1)
+  stats["Eq_Av"] = pd.concat(stats["Eq_Av"], ignore_index=True).merge(tag_map, how='inner',left_on="signalid", right_on="id").drop(["id","parent_id","signalid","desc"], axis=1)
+  stats["Eq_Av_Stats"] = stats["Eq_Av"].drop(["sim_id"], axis=1).melt(id_vars=["Node Desc"]).groupby(["Node Desc","variable"]).describe().drop([("value","count")], axis=1)
   stats["Eq_Av_Stats"].columns = stats["Eq_Av_Stats"].columns.droplevel(0)
     
   #stats["Inv_Av"] = pd.concat(stats["Inv_Av"], ignore_index=True)
   #stats["Inv_Av_Stats"] = stats["Inv_Av"].drop(["sim_id"], axis=1).melt(id_vars=["matl"]).groupby(["matl","variable"]).describe().drop([("value","count")], axis=1)
-  stats["Inv"] = pd.concat(inv_p1+inv_p2, ignore_index=True)
+  stats["Inv"] = pd.concat(inv_p1+inv_p2, ignore_index=True).merge(right=inv_map,on="matl").drop(["matl"],axis=1).rename(columns={"matl desc":"matl"})
   stats["Inv_Stats"] = stats["Inv"].drop(["sim_id"], axis=1).groupby(["matl","variable"]).describe().drop([("value","count")], axis=1)
   stats["Inv_Stats"].columns = stats["Inv_Stats"].columns.droplevel(0)
   
   stats["Eq_Crit"] = pd.concat(stats["Eq_Crit"], ignore_index=True)
+  stats["Eq_Crit"].rename(columns = lambda c: c if c=="sim_id" else tag_map.loc[tag_map.id==c,"Node Desc"].iloc[0], inplace=True)
   stats["Eq_Crit_Stats"] = stats["Eq_Crit"].drop(["sim_id"], axis=1).describe().transpose().drop(["count"], axis=1)
 
   #maintenance overall stats
@@ -1104,10 +1134,10 @@ def run_ram_model(equipmentdf, subsystemdf, systemdf, failuremodedf, inspectiond
   m1["Measure"] = "Duration"
   m2 = stats["Maint"].groupby(["Task","sim_id"]).count().reset_index().drop(["sim_id"], axis=1).rename(columns = {"Duration":"value"})
   m2["Measure"] = "Task Count"
-  stats["Maint_Stats"] = pd.concat([m1,m2],ignore_index=True).groupby(["Task","Measure"]).describe()
+  stats["Maint_Stats"] = pd.concat([m1,m2],ignore_index=True).merge(task_map, on="Task").drop(["Task","target_fm"],axis=1).groupby(["Task Desc","Measure"]).describe()
   stats["Maint_Stats"].columns = stats["Maint_Stats"].columns.droplevel(0)
   
-  stats["Maint"] = stats["Maint"].groupby(["Task", "sim_id"]).describe()
+  stats["Maint"] = stats["Maint"].merge(task_map, on="Task").drop(["Task","target_fm"],axis=1).groupby(["Task Desc", "sim_id"]).describe()
   stats["Maint"].columns = stats["Maint"].columns.map('_'.join)
   stats["Maint"].rename(columns={"Duration_count":"Count"}, inplace=True)
 
@@ -1226,7 +1256,10 @@ def run_ram_model_celery(self, request_form, meta):
   result["times"] = gff.helper_dict_to_std_html(model_result["times"], "times")
 
   for k,v in model_result["stats"].items():
-    result[k] = gff.helper_format_df_as_std_html(v)
+    if k == "Eq_Crit_Stats":
+      result[k] = gff.helper_format_df_as_std_html(v, ff= '{:,.2%}'.format)
+    else:
+      result[k] = gff.helper_format_df_as_std_html(v)
     
   #result["av"] = gff.helper_format_df_as_std_html(model_result["stats"]["Sys_Av"])
   #result["inv"] = gff.helper_format_df_as_std_html(model_result["stats"]["Inv_Av"])
