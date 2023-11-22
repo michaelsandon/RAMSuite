@@ -20,9 +20,3 @@
   {% endif %}
 </div>
 {% endblock %}
-
-
-{% block scripts %}
-  {{super()}}
-  <script src="{{url_for('survival.static', filename='js/survival.js')}}"></script>
-{% endblock %}

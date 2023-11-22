@@ -1,4 +1,4 @@
-from app.extensions import ramdb
+from app.extensions import ramsuitedb
 from app.models.ram import ram_model_index as rmi
 from app.models.ram import ram_model_equipment as rme
 from app.models.ram import ram_model_subsystem_index as rmsi
@@ -14,7 +14,7 @@ import pandas as pd
 import app.static.helpers.global_formatting_functions as gff
 
 
-def helper_query_ram_model_db_by_model_id(db=ramdb,tables=None,modelid=None,format="dict"):
+def helper_query_ram_model_db_by_model_id(db=ramsuitedb,tables=None,modelid=None,format="dict"):
 
   queries = {
     "model": db.select(rmi),

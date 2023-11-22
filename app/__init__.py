@@ -1,26 +1,27 @@
 from flask import Flask
 from config import Config
 from app.static.helpers.site_map import site_map
-from app.extensions import make_celery, ramdb
-from redis import Redis
+from app.extensions import celery, ramsuitedb
 
-def create_app(config_class=Config):
+
+def create_app(config_class=Config, standalone = False):
   app = Flask(__name__)
   app.config.from_object(config_class)
 
   # Initialize Flask extensions here
   ## redis for task management
-  redis = Redis(host='localhost', port=6379)
+  if standalone:
+    from redis import Redis
+    redis = Redis(host='localhost', port=6379)
 
   ##celery
-  celery = make_celery(app)
+  #celery = make_celery(app)
+  celery.conf.update(app.config["CELERY_CONFIG"])
   celery.set_default()
 
-  ##
-  ramdb.init_app(app)
+  ##ramdb
+  ramsuitedb.init_app(app)
   
-
-
   # Global vars
   @app.context_processor
   def navbar():
@@ -50,8 +51,10 @@ def create_app(config_class=Config):
 
 
   # main driver function
-
-  return app, celery, redis, ramdb
+  if standalone:
+    return app, celery, redis
+  else:
+    return app, celery
 
 
 

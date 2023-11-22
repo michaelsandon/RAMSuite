@@ -1,10 +1,8 @@
-#from app.__init__ import create_app
 from app import create_app
-#from app import celery
 
-#celery = celery
-Flask_app, celery, redis, ramdb = create_app()
-#Flask_app = create_app()
+Flask_app, celery = create_app()
+#Flask_app, celery, ramdb, redis = create_app(standalone = True)
+
 Flask_app.app_context().push()
 
 if __name__ == "__main__":

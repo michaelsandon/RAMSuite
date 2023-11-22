@@ -1,4 +1,4 @@
-from app.extensions import ramdb as db
+from app.extensions import ramsuitedb as db
 from sqlalchemy import func
 
 #model index
