@@ -17,7 +17,7 @@ def models():
 
 @bp.route('/')
 def index():
-  return render_template('availability/index.html')
+  return render_template('availability/index.html', parent_map_index = 2)
 
 @bp.route('/packageuptime/')
 def packageuptime():
@@ -41,7 +41,6 @@ def packageuptime_result(task_id=None):
 
 @bp.route('/ram/')
 def ram():
-  #models = ram_db_funcs.helper_query_ram_model_db_by_model_id(tables=["model"],format="scalars")
   return render_template('availability/ram.html', models = models())
 
 @bp.route('/ram/modelmanager/', methods=["POST"])
@@ -60,32 +59,29 @@ def ram_model_manager(model_id=None):
   else:
     model = ram_db_funcs.helper_query_ram_model_db_by_model_id(modelid=model_id, format="html-std")
     model_details = ram_db_funcs.helper_query_ram_model_db_by_model_id(modelid=model_id, format="df", tables=["model"])
-    equipmentdf = model["equipment"]
-    subsystemdf=model["subsystemstructure"]
-    systemdf=model["system"]
-    failuremodedf=model["failuremodes"]
-    inspectiondf=None
-    tbmdf = None
-    cbmdf = model["conditionbasedmaintenance"]
-    failuremoderesponsesdf=model["equipmentfailuremoderesponses"]
-    inventorydf = model["inventory"]
-    componentlistdf = model["componentlistdetails"]
+
+    mapped_accordion = {
+      "Equipment Index":model["equipment"],
+      "Sub-Systems":model["subsystemstructure"],
+      "System":model["system"],
+      "Equipment Failure Modes":model["failuremodes"],
+      "Failuremode Responses":model["equipmentfailuremoderesponses"],
+      "Inspection":None,
+      "Condition Based Maintenance":model["conditionbasedmaintenance"],
+      "Time Based Maintenance":None,
+      "Inventory":model["inventory"],
+      "Maintenance Task Lists":model["componentlistdetails"],
+      "Integrated / Planned Shutdown Events":None,
+      "Conditional Logic":None,
+      "Operational Responses":None,
+      "Capital Upgrade Responses":None
+        }
+    
     return render_template('availability/ram_model_manager.html',
                            model_id = model_details.loc[0,"id"],
                            loaded_model_title = model_details.loc[0,"title"],
-                           equipmentdf = equipmentdf,
-                           subsystemdf = subsystemdf,
-                           systemdf = systemdf,
-                           failuremodedf = failuremodedf,
-                           failuremoderesponsesdf = failuremoderesponsesdf,
-                           inspectiondf = inspectiondf,
-                           cbmdf = cbmdf,
-                           tbmdf = tbmdf,
-                           inventorydf = inventorydf,
-                           componentlistdf = componentlistdf
+                           mapped_accordion = mapped_accordion
                           )
-    
-
 
 
 @bp.route('/ram/result/', methods=["POST"])

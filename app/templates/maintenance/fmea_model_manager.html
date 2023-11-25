@@ -1,0 +1,21 @@
+{% extends 'base_app.html' %}
+
+{% block content %}
+<div class="content-container">
+  <h3 class="section-heading">FMEA Model Tables</h3>
+  <div><b>Model ID: </b><span id="loaded-model-id">{{model_id}}</span></div>
+  <div><b>Model Title: </b><span id="loaded-model-id">{{loaded_model_title}}</span></div>
+
+  {% include 'components/mapped_accordion.html' %}
+
+  <h2>FMEA Output</h2>
+  {{fmea|safe}}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<!--script src="{{url_for('availability.static', filename='js/ram_model_manager.js')}}"></script-->
+{% endblock %}

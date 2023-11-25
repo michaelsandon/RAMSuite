@@ -4,20 +4,24 @@ from app.static.helpers.site_map import site_map
 from app.extensions import celery, ramsuitedb
 
 
-def create_app(config_class=Config, standalone = False):
+def create_app(config_class=Config, redis_rqd = False, celery_rqd = False):
   app = Flask(__name__)
   app.config.from_object(config_class)
 
+  app_product = {}
   # Initialize Flask extensions here
   ## redis for task management
-  if standalone:
+  if redis_rqd:
     from redis import Redis
     redis = Redis(host='localhost', port=6379)
+    app_product["redis"] = redis
 
   ##celery
   #celery = make_celery(app)
-  celery.conf.update(app.config["CELERY_CONFIG"])
-  celery.set_default()
+  if celery_rqd:
+    celery.conf.update(app.config["CELERY_CONFIG"])
+    celery.set_default()
+    app_product["celery"] = celery
 
   ##ramdb
   ramsuitedb.init_app(app)
@@ -50,11 +54,9 @@ def create_app(config_class=Config, standalone = False):
   app.register_blueprint(resources_bp, url_prefix='/resources')
 
 
+  app_product["app"] = app
   # main driver function
-  if standalone:
-    return app, celery, redis
-  else:
-    return app, celery
+  return app_product
 
 
 

@@ -1,0 +1,15 @@
+<div id="tile-container" class="flex-grow-1">
+  <div  class="d-flex flex-row flex-wrap">
+    {% for tile in site_map[parent_map_index]['Children'] %}
+    {% if tile['Name']!="Home" %}
+      <div class="card text-bg-light m-3" style="width: 18rem;" onclick="window.open('{{url_for(tile['Route'])}}', '_self');">
+        <div class="card-body">
+          <h5 class="card-title">{{tile['Name']}}</h5>
+          <h6 class="card-subtitle mb-2 text-body-secondary">Card subtitle</h6>
+          <p class="card-text">{{tile['Desc']}}</p>
+        </div>
+      </div>
+    {% endif %}
+    {% endfor %}
+  </div>        
+</div>
