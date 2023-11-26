@@ -249,7 +249,7 @@ def list_tbls_from_model(model):
 
 
 ##inits to run
-inits = ["fmea"] #"ram","fmea","risk"
+inits = ["risk"] #"ram","fmea","risk"
 for init in inits:
   match init:
     case "ram":

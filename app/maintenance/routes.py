@@ -46,7 +46,7 @@ def fmea_model_manager(model_id=None):
       "Functional Failures":model["functionalfailures"]
         }
 
-    fmea = maint_db_funcs.helper_query_combined_fmea_by_id(fmeaid = model_id, format = "html-std")
+    fmea = maint_db_funcs.helper_query_combined_fmea_by_id(fmeaid = model_id, format = "html-std", grouped=True)
 
     return render_template('maintenance/fmea_model_manager.html',
                            model_id = model_details.loc[0,"id"],

@@ -42,9 +42,9 @@ def basic_matrix():
   consequence(3,"high",matrix)
 
   level(1,"low","GreenYellow",matrix)
-  level(2,"low","Yellow",matrix)
-  level(3,"low","Orange",matrix)
-  level(4,"low","Red",matrix)
+  level(2,"med","Yellow",matrix)
+  level(3,"high","Orange",matrix)
+  level(4,"severe","Red",matrix)
 
   riskmap(1,1,1,matrix)
   riskmap(2,1,2,matrix)
