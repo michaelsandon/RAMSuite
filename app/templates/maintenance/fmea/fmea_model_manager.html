@@ -1,0 +1,25 @@
+{% extends 'base_app.html' %}
+{% import 'macros/accordions.html' as acc with context %}
+
+{% block content %}
+<div class="content-container">
+  <h3 class="section-heading">FMEA Model Tables</h3>
+  <div><b>Model ID: </b><span id="loaded-model-id">{{model_index.id}}</span></div>
+  <div><b>Model Title: </b><span id="loaded-model-id">{{model_index.title}}</span></div>
+  {% set labels = tbls.keys()|list %}
+  {% set contents1 = tbls.values()|list %}
+  {% set contents2 = ['maintenance/fmea/create_fmea_function.html','maintenance/fmea/create_fmea_functional_failure.html'] %}
+  {{ acc.complexaccordion(labels=labels,contentlists=[contents1,contents2],include_or_print=['print','include']) }}
+  
+
+  <h2>FMEA Output</h2>
+  {{fmea|safe}}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<!--script src="{{url_for('availability.static', filename='js/ram_model_manager.js')}}"></script-->
+{% endblock %}

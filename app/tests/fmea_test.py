@@ -17,6 +17,7 @@ Flask_app = create_app()["app"]
 
 
 with Flask_app.app_context():
-  res = maint_db_funcs.helper_query_combined_fmea_by_id(fmeaid=1,format="html-std", grouped=True)
-
-  res = gff.helper_reformat_grouped_df_html(res)
+  #res = maint_db_funcs.helper_query_combined_fmea_by_id(fmeaid=2,format="html-std", grouped=True)
+  res = maint_db_funcs.helper_query_fmea_by_id(fmeaid=1,format="scalars")
+  print(res["doc"].one().id)
+  

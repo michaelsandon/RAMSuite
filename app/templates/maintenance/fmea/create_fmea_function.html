@@ -1,0 +1,6 @@
+{% import 'macros/forms.html' as forms %}
+<form id="" action="" method="POST">
+  {{ forms.input(type='number',value=model_index.id, label="FMEA Id",name='fmeaId',disabled=True)}}
+  {{ forms.textarea(name='desc', label='Function Description') }}
+  {{ forms.submit(label='Create Function') }}
+</form>

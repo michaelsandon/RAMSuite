@@ -184,13 +184,15 @@ def helper_reformat_grouped_df_html(htmlsrc):
   soup = BeautifulSoup(htmlsrc,'html.parser')
   tbody = str(soup.table.tbody).replace("th>","td>").replace("<th","<td")
   soup.table.tbody.replace_with(BeautifulSoup(tbody,'html.parser'))
-  top_r = soup.thead.tr.extract()
-  #flattening header
-  counter = 0
-  for elem in soup.thead("th"):
-    if elem.string=='\xa0':
-      elem.string = top_r("th")[counter].string
-    counter = counter + 1
+
+  if len(soup.table.thead.find_all(True, recursive=False)) > 1:
+    top_r = soup.thead.tr.extract()
+    #flattening header
+    counter = 0
+    for elem in soup.thead("th"):
+      if elem.string=='\xa0':
+        elem.string = top_r("th")[counter].string
+      counter = counter + 1
   
   return str(soup)
 

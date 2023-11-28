@@ -1,0 +1,53 @@
+{% macro input(name, value='', type='text', label='', disabled=False) -%}
+  <div>
+      <label class="form-label">{{ label }}</label>
+      <input type="{{ type }}" value="{{ value|e }}" name="{{ name }}" {% if disabled %}disabled{% endif %}>
+  </div>
+
+{%- endmacro %}
+
+{%- macro textarea(name, label, value='', rows=5, cols=50) -%}
+  <div class="mb-3">
+    <label class="form-label">{{ label }}</label>
+    <textarea class="form-control" name="{{ name }}" rows="{{ rows }}" cols="{{ cols }}">{{ value|e }}</textarea>
+  </div>
+{%- endmacro %}
+
+{% macro text(name, label) -%}
+  <div class="mb-3">
+    <label class="form-label">{{ label }}</label>
+    <input type="text" class="form-control" name="{{ name }}" required>
+  </div>
+{%- endmacro %}
+
+{% macro submit(label) -%}
+  <div class="mb-3">
+    <button type="submit" class="btn btn-primary">{{ label }}</button>
+  </div>
+{%- endmacro %}
+
+{% macro select(name, label, optionlist, valattr, descattr) -%}
+  <div class="mb-3">
+    <label class="form-label">{{ label }}</label>
+    <select class="form-select" name="{{ name }}">
+      {% for item in optionlist %}
+      <option value="{{item[valattr]}}">{{item[descattr]}}</option>
+      {% endfor %}
+    </select>
+  </div>
+{%- endmacro %}
+
+{% macro inlineradio(name, optionlist, valattr, descattr) -%}
+  <div>
+    {% for item in optionlist %}
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="{{ name }}" id="lct1" value="{{item[valattr]}}" 
+        {% if loop.index == 1%}
+        checked
+        {% endif %}
+        >
+      <label class="form-check-label">{{item[descattr]}}</label>
+    </div>
+    {% endfor %}
+  </div>
+{%- endmacro %}

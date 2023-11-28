@@ -21,11 +21,11 @@ def strategy_optimiser():
 
 @bp.route('/fmea')
 def fmea():
-  return render_template('maintenance/fmea.html', models = models())
+  return render_template('maintenance/fmea/fmea.html', models = models())
 
 
-@bp.route('/fmea/modelmanager/', methods=["POST"])
-@bp.route('/fmea/modelmanager/<model_id>/', methods=["POST"])
+@bp.route('/fmea/modelmanager/', methods=["GET","POST"])
+@bp.route('/fmea/modelmanager/<model_id>/', methods=["GET","POST"])
 def fmea_model_manager(model_id=None):
   if (request.method == "POST") & (model_id is None):
     #get model id from request
@@ -33,25 +33,28 @@ def fmea_model_manager(model_id=None):
     #run some error checkinf
     if model_id is None:
       #other error checking to be added
-      return render_template('maintenance/fmea.html', models = models())
+      return render_template('maintenance/fmea/fmea.html', models = models())
     else:
-      return redirect(url_for('maintenance.fmea_model_manager', model_id = model_id), code=307)
+      return redirect(url_for('maintenance.fmea_model_manager', model_id = model_id))#, code=307)
 
   else:
-    model = maint_db_funcs.helper_query_fmea_by_id(fmeaid=model_id, format="html-std")
-    model_details = maint_db_funcs.helper_query_fmea_by_id(fmeaid=model_id, format="df", tables=["doc"])
+    model_html = maint_db_funcs.helper_query_fmea_by_id(fmeaid=model_id, format="html-std")
+    model_details = maint_db_funcs.helper_query_fmea_by_id(fmeaid=model_id, format="scalars")
 
-    mapped_accordion = {
-      "Functions":model["functions"],
-      "Functional Failures":model["functionalfailures"]
+    tbls = {
+      "Functions":model_html["functions"],
+      "Functional Failures":model_html["functionalfailures"],
+      "Functional Failure Consequences":model_html["functionalfailureconsequences"],
+      "Failure Modes":model_html["failuremodes"],
+      "Failure Map":model_html["failuremap"]
         }
 
     fmea = maint_db_funcs.helper_query_combined_fmea_by_id(fmeaid = model_id, format = "html-std", grouped=True)
 
-    return render_template('maintenance/fmea_model_manager.html',
-                           model_id = model_details.loc[0,"id"],
-                           loaded_model_title = model_details.loc[0,"title"],
-                           mapped_accordion = mapped_accordion,
+    return render_template('maintenance/fmea/fmea_model_manager.html',
+                           model_index = model_details["doc"].one(),
+                           functions = model_details["functions"],
+                           tbls = tbls,
                            fmea = fmea
                           )
 
@@ -68,3 +71,15 @@ def api_fmea_model_detail(fmea_id, table, datatype = None):
   response = maint_db_funcs.helper_query_fmea_by_id(tables=[table], fmeaid=fmea_id, format=datatype)
 
   return response
+
+@bp.route('/fmea/create/<table>/', methods=["POST"])
+def create_fmea_record(table):
+  if table == "fmea_index":
+    new_fmea_id = maint_db_funcs.create_fmea_record("fmea_index",request.form)
+    response = redirect(url_for('maintenance.fmea_model_manager', model_id = new_fmea_id))
+  else:
+    pass
+
+  return response
+  
+  

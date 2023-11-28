@@ -1,0 +1,43 @@
+{% extends 'base_app.html' %}
+{% import 'macros/forms.html' as forms %}
+
+{% block content %}
+<div class="content-container">
+  <h1 class="section-heading">FMEA Document Index</h1>
+  <h2>Step1. Load an Existing Model or Create New</h2>
+  <div class="accordion" id="accordionloadcreatemodel">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="lcmforms">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#lcmformone" aria-expanded="true" aria-controls="lcmformone">
+          <b>Model Selection: </b>
+        </button>
+      </h2>
+      <div id="lcmformone" class="accordion-collapse collapse show" aria-labelledby="lcmforms" data-bs-parent="#accordionloadcreatemodel">
+        <div class="accordion-body">
+          {% set checklist = [{"desc":'Create New Model',"val":1},{"desc":'Load Existing Model',"val":2}] %}
+          {{ forms.inlineradio(name="loadcreatetoggle", optionlist=checklist, valattr='val', descattr='desc') }}
+          <form id="formcreatemodel" action="{{url_for('maintenance.create_fmea_record',table='fmea_index')}}" method="POST">
+            {{ forms.text(name='title', label='Model Title') }}
+            {{ forms.textarea(name='desc', label='Model Description') }}
+            {{ forms.submit(label='Create Model') }}
+          </form>
+          <form id="formloadmodel" action="{{url_for('maintenance.fmea_model_manager')}}" method="POST" hidden>
+            {{ forms.select(name='modelselect', label='Lookup Model', optionlist=models, valattr='id', descattr='title')}}
+            {{ forms.submit(label='Load Model') }}
+            <label for="load-progress-bar" hidden></label>
+            <progress id="load-progress-bar" value="0" max="100" hidden></progress>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  
+  
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script src="{{url_for('maintenance.static', filename='js/fmea.js')}}"></script>
+{% endblock %}

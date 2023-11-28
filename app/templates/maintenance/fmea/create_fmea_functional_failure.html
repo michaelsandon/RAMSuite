@@ -1,0 +1,6 @@
+{% import 'macros/forms.html' as forms %}
+<form id="" action="" method="POST">
+  {{ forms.select(name='fmeaFunctionId', label="Function", optionlist=functions, valattr='id', descattr='desc') }}
+  {{ forms.textarea(name='desc', label='Function Description') }}
+  {{ forms.submit(label='Add Functional Failure') }}
+</form>

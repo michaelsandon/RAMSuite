@@ -1,9 +1,9 @@
 from app.extensions import ramsuitedb
+import app.models.maintenance as m_models
 from app.models.maintenance import fmea_index as fi, fmea_function as ff, fmea_functional_failure as fff, fmea_functional_failure_consequence as fffc, fmea_failure_map as ffmp, fmea_failure_mode as ffmd
 from app.models.risk import risk_matrix_consequence as rmc, risk_matrix_risk_category as rmrc, risk_matrix_likelihood as rml, risk_matrix_risk_map as rmrm, risk_matrix_risk_level as rmrl
 import pandas as pd
 import app.static.helpers.global_formatting_functions as gff
-from sqlalchemy import join
 
 def colour_risk(val,colourmap):
   if val is None or pd.isna(val):
@@ -18,7 +18,9 @@ def helper_query_fmea_by_id(db=ramsuitedb,tables=None,fmeaid=None,format="dict")
     "doc": db.select(fi),
     "functions": db.select(ff).join(fi),
     "functionalfailures": db.select(fff).join(ff).join(fi),
-    "functionalfailureconsequences":db.select(fffc).join(fff).join(ff).join(fi)
+    "functionalfailureconsequences":db.select(fffc).join(fff).join(ff).join(fi),
+    "failuremodes":db.select(ffmd).join(fi),
+    "failuremap":db.select(ffmp).join(fi)
   }
 
   #return all tables if keys is None
@@ -129,7 +131,10 @@ def helper_query_combined_fmea_by_id(db=ramsuitedb,fmeaid=None,format="dict", gr
       fp = fp.pivot(index = ["Function","Functional Failure","Consequence Description"]+riskcats+["Consequence","Failure Mode","Likelihood","Risk"],columns = ["spare"],values=["spare2"])
       fp.columns = fp.columns.droplevel(0)
       fp.reset_index(level=["Risk"], inplace=True)
-      fp.drop(["spare"],axis=1,inplace=True)
+      try:
+        fp.drop(["spare"],axis=1,inplace=True)
+      except:
+        pass
 
       result = fp
 
@@ -145,3 +150,12 @@ def helper_query_combined_fmea_by_id(db=ramsuitedb,fmeaid=None,format="dict", gr
       result = gff.helper_reformat_grouped_df_html(result)
 
   return result
+
+
+def create_fmea_record(model_as_string,record_data_as_dict):
+  model = getattr(m_models,model_as_string)
+  record = model(**record_data_as_dict)
+  ramsuitedb.session.add(record)
+  ramsuitedb.session.flush()
+  ramsuitedb.session.commit()
+  return record.id
